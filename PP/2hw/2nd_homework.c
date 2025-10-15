@@ -1,7 +1,7 @@
 /*
-   Code written by Aringas Civilka 2025
-   for a procedural programming class in
-   Vilnius University.
+    Code written by Aringas Civilka 2025
+    for a procedural programming class in
+    Vilnius University.
 
     Assignment:
     Įvesti sveiką skaičių N. Užpildyti
@@ -97,30 +97,29 @@ void spiralMatrixWithMalloc(short N) {
     // Create matrix and padding array
     int *M = malloc(N * N * sizeof(int));
     short *P = calloc(N, sizeof(short));
-    short r = 1;        // Row
-    short c = 1;        // Column
+    short r = 0;        // Row
+    short c = 0;        // Column
     short layer = 0;
     short len;
     
     // Fill up M(atrix)
     for (int i = 1; i <= N*N; i++) {
-        M[(r - 1) * N + (c - 1)] = i;
+        M[r * N + c] = i;
 
         // Calculate num width for padding
         len = digitCount(i);
-
-        if (len > P[c - 1])
-            P[c - 1] = len;
+        if (len > P[c])
+            P[c] = len;
 
         // Change row/column according to
         // current position
-        if (r == 1 + layer && c < N - layer)
+        if (r == layer && c < (N - 1) - layer)
             c++; // Top side of layer
-        else if (c == N - layer && r < N - layer)
+        else if (c == (N - 1) - layer && r < (N - 1) - layer)
             r++; // Right side of layer
-        else if (r == N - layer && c > 1 + layer)
+        else if (r == (N - 1) - layer && c > layer)
             c--; // Bottom side of layer
-        else if (c == 1 + layer && r > 2 + layer)
+        else if (c == layer && r > 1 + layer)
             r--; // Left side of layer
         else {   // Enter new layer
             c++;
@@ -211,3 +210,4 @@ int main() {
 
     return 0;
 }
+
