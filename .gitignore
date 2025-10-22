@@ -1,8 +1,14 @@
 *
 
+# source code
 !*.c
+!*.cpp
+!*.sh
+!*.asm
+!*.py
+
+# other
+!*.zip
 !*.pdf
 !.gitignore
-!*.zip
-!*.sh
 !*/
