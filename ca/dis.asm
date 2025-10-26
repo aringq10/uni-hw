@@ -303,183 +303,68 @@ main_loop endp
 first_filter proc
     push cx
     push si
-    
-    call parse_mov 
+    call format_seg_override
+    call cmd_name_unknown
 
+    mov dh, first_byte
+    shr dh, 4
+    cmp dh, 0
+    je .opc_0h
+    cmp dh, 2
+    je .opc_2h
+    cmp dh, 3
+    je .opc_3h
+    cmp dh, 4
+    je .opc_4h
+    cmp dh, 5
+    je .opc_5h
+    cmp dh, 8
+    je .opc_8h
+    cmp dh, 0Ah
+    je .opc_Ah
+    cmp dh, 0Bh
+    je .opc_Bh
+    cmp dh, 0Ch
+    je .opc_Ch
+    cmp dh, 0Fh
+    je .opc_Fh
+    jmp .end_parse
+
+    .opc_0h:
+        call opc_0h
+        jmp .end_parse
+    .opc_2h:
+        call opc_2h
+        jmp .end_parse
+    .opc_3h:
+        call opc_3h
+        jmp .end_parse
+    .opc_4h:
+        call opc_4h
+        jmp .end_parse
+    .opc_5h:
+        call opc_5h
+        jmp .end_parse
+    .opc_8h:
+        call opc_8h
+        jmp .end_parse
+    .opc_Ah:
+        call opc_Ah
+        jmp .end_parse
+    .opc_Bh:
+        call opc_Bh
+        jmp .end_parse
+    .opc_Ch:
+        call opc_Ch
+        jmp .end_parse
+    .opc_Fh:
+        call opc_Fh
+
+    .end_parse:
     pop si
     pop cx
     ret
 first_filter endp
-
-parse_mov proc
-    ; Check for segment override
-    call format_seg_override
-    ; INT command
-    mov dh, first_byte
-    cmp dh, 0CDh
-    je .int
-    call cmd_name_mov
-    ; MOV commands
-    ; uses dh for tmp first_byte storage
-    mov dh, first_byte
-    shr dh, 4
-    cmp dh, 8  ; 1000 10dw or
-               ; 1000 11d0 
-    jne .further
-    call mov_1_6
-    ret
-    .further:
-    cmp dh, 12 ; 1100 011w
-    je .mov_2
-    cmp dh, 11 ; 1011 w reg
-    je .mov_3
-    cmp dh, 10 ; 1010 000w or
-               ; 1010 001w
-    je .mov_4_5
-    call cmd_name_unknown
-    ret
-
-    .mov_2:
-        call mov_2
-        ret
-    .mov_3:
-        call mov_3
-        ret
-    .mov_4_5:
-        call mov_4_5
-        ret
-    .int:
-        call int_cmd
-        ret
-parse_mov endp
-
-mov_1_6 proc
-    mov dh, first_byte
-    and dh, 4
-    cmp dh, 4
-    je .mov_6
-    .mov_1:
-        inc cmd_len
-        call parse_2nd_byte
-        mov dh, first_byte
-        and dh, 1
-        mov w, dh
-        mov dh, first_byte
-        shr dh, 1
-        and dh, 1
-        mov d, dh
-
-        cmp d, 0
-        jne .mov_1_d1
-        call op_1_raddress
-        call op_2_reg
-        ret
-        .mov_1_d1:
-            call op_1_reg
-            call op_2_raddress            
-            ret
-    .mov_6:
-        inc cmd_len
-        call parse_2nd_byte
-        mov dh, first_byte
-        shr dh, 1
-        and dh, 1
-        mov d, dh
-        mov w, 1
-        mov dh, reg
-        mov sreg, dh
-        cmp d, 0
-        jne .mov_6_d1
-        call op_1_raddress
-        call op_2_sreg
-        ret
-        .mov_6_d1:
-            call op_1_sreg
-            call op_2_raddress
-            ret
-mov_1_6 endp
-
-mov_2 proc
-    inc cmd_len
-    call parse_2nd_byte
-    mov dh, first_byte
-    and dh, 1
-    mov w, dh
-    inc dh
-    add cmd_len, dh
-    ; form op_1
-    call op_1_raddress
-    ; form op_2
-    mov dx, 2
-    add dl, cmd_off_b
-    mov si, main_loop_si
-    add si, dx
-    call op_2_imm
-    ret
-mov_2 endp
-
-mov_3 proc
-    mov dh, first_byte
-    shr dh, 3
-    and dh, 1
-    mov w, dh
-    inc dh
-    add cmd_len, dh
-    mov dh, first_byte
-    and dh, 7
-    mov reg, dh
-    ; form op_1 
-    call op_1_reg
-    ; form op_2
-    mov si, main_loop_si
-    inc si
-    call op_2_imm
-    ret
-mov_3 endp
-
-mov_4_5 proc
-    mov dh, first_byte
-    and dh, 2
-    cmp dh, 2
-    je .mov_5
-    .mov_4:
-        ; direction: direct memory -> reg
-        mov dh, first_byte
-        and dh, 1
-        mov w, dh
-        mov reg, 0
-        ; form op_1
-        call op_1_reg
-        ; form op_2
-        inc si
-        call op_2_daddress
-
-        mov cmd_len, 3
-        ret
-    .mov_5:
-        ; direction: reg -> direct memory
-        mov dh, first_byte
-        and dh, 1
-        mov w, dh
-        mov reg, 0
-        ; form op_1
-        inc si
-        call op_1_daddress
-        ; form op_2
-        call op_2_reg
-
-        mov cmd_len, 3
-        ret
-mov_4_5 endp
-
-int_cmd proc
-    call cmd_name_int
-    mov w, 0
-    inc si
-    call op_1_imm
-    mov cmd_len, 2
-    ret
-int_cmd endp
 
 parse_2nd_byte proc
     ; store mod (md)
@@ -712,38 +597,6 @@ op_from_daddress proc
     mov byte ptr [di], 'h'
     mov byte ptr [di + 1], ']'
     ret
-
-
-       ; cmp d, 0
-
-       ; jne .daddress_op2
-       ;     mov di, offset op_1
-       ;     mov op_1_len, 7
-       ;     jmp .write_daddress
-
-       ; .daddress_op2:
-       ;     mov di, offset op_2
-       ;     mov op_2_len, 7
-
-       ; .write_daddress:
-       ;     mov byte ptr [di], '['
-       ;     inc di
-       ;     ; first byte
-       ;     mov bl, [si + 2]
-       ;     call byte_to_hex
-       ;     mov [di], bh
-       ;     mov [di + 1], bl
-       ;     add di, 2
-       ;     ; second byte
-       ;     mov bl, [si + 1]
-       ;     call byte_to_hex
-       ;     mov [di], bh
-       ;     mov [di + 1], bl
-       ;     add di, 2
-       ;     
-       ;     mov byte ptr [di], 'h'
-       ;     mov byte ptr [di + 1], ']'
-       ;     ret
 op_from_daddress endp
 
 op_from_raddress proc
@@ -1200,5 +1053,286 @@ format_seg_override proc
         inc main_loop_si
         ret
 format_seg_override endp
+
+;
+; Command parsing
+;
+opc_0h proc
+    mov dh, first_byte
+    shr dh, 2
+    cmp dh, 0
+    je .add_reg_bw_regmem
+    mov dh, first_byte
+    shr dh, 1
+    cmp dh, 2
+    je .add_acc_ow_imm
+    ret
+
+    .add_reg_bw_regmem:
+        ret
+    .add_acc_ow_imm:
+        ret
+opc_0h endp
+
+opc_2h proc
+    mov dh, first_byte
+    shr dh, 2
+    cmp dh, 2
+    je .sub_regmem_bw_reg
+    mov dh, first_byte
+    shr dh, 1
+    cmp dh, 6
+    je .sub_acc_ow_imm
+    ret
+
+    .sub_regmem_bw_reg:
+        ret
+    .sub_acc_ow_imm:
+        ret
+opc_2h endp
+
+opc_3h proc
+    mov dh, first_byte
+    shr dh, 2
+    cmp dh, 2
+    je .cmp_regmem_bw_reg
+    mov dh, first_byte
+    shr dh, 1
+    cmp dh, 6
+    je .cmp_acc_ow_imm
+    ret
+
+    .cmp_regmem_bw_reg:
+        ret
+    .cmp_acc_ow_imm:
+        ret   
+opc_3h endp
+
+opc_4h proc
+    mov dh, first_byte
+    shr dh, 3
+    cmp dh, 0
+    je .inc_reg
+    cmp dh, 1
+    je .dec_reg
+    ret
+
+    .inc_reg:
+        ret
+    .dec_reg:
+        ret   
+opc_4h endp
+
+opc_5h proc
+    mov dh, first_byte
+    shr dh, 3
+    cmp dh, 1
+    je .pop_reg
+    cmp dh, 0
+    je .push_reg
+    ret
+
+    .pop_reg:
+        ret
+    .push_reg:
+        ret   
+opc_5h endp
+
+opc_8h proc
+    mov dh, first_byte
+    and dh, 15
+    cmp dh, 15
+    je .pop_regmem
+    shr dh, 2
+    cmp dh, 0
+    je .opc_8_00
+    cmp dh, 2
+    je .mov_reg_bw_regmem
+    cmp dh, 3
+    je .mov_regmem_bw_sreg
+    ret
+
+    .pop_regmem:
+        ret
+    .mov_reg_bw_regmem:
+        call cmd_name_mov
+        inc cmd_len
+        call parse_2nd_byte
+        mov dh, first_byte
+        and dh, 1
+        mov w, dh
+        mov dh, first_byte
+        shr dh, 1
+        and dh, 1
+        mov d, dh
+
+        cmp d, 0
+        jne .mov_1_d1
+        call op_1_raddress
+        call op_2_reg
+        ret
+        .mov_1_d1:
+            call op_1_reg
+            call op_2_raddress            
+            ret
+    .mov_regmem_bw_sreg:
+        call cmd_name_mov
+        inc cmd_len
+        call parse_2nd_byte
+        mov dh, first_byte
+        shr dh, 1
+        and dh, 1
+        mov d, dh
+        mov w, 1
+        mov dh, reg
+        mov sreg, dh
+        cmp d, 0
+        jne .mov_6_d1
+        call op_1_raddress
+        call op_2_sreg
+        ret
+        .mov_6_d1:
+            call op_1_sreg
+            call op_2_raddress
+            ret
+    .opc_8_00:
+        mov dh, sec_byte
+        shr dh, 3
+        and dh, 7
+        cmp dh, 0
+        je .add_regmem_ow_imm
+        cmp dh, 7
+        je .cmp_regmem_ow_imm
+        cmp dh, 6
+        je .sub_regmem_ow_imm
+        ret
+
+        .add_regmem_ow_imm:
+            ret
+        .cmp_regmem_ow_imm:
+            ret
+        .sub_regmem_ow_imm:
+            ret
+opc_8h endp
+
+opc_Ah proc
+    mov dh, first_byte
+    shr dh, 1
+    and dh, 7
+    cmp dh, 0
+    je .mov_acc_ow_mem
+    cmp dh, 1
+    je .mov_mem_ow_acc
+    ret
+
+    .mov_acc_ow_mem:
+        call cmd_name_mov
+        ; direction: direct memory -> reg
+        mov dh, first_byte
+        and dh, 1
+        mov w, dh
+        mov reg, 0
+        ; form op_1
+        call op_1_reg
+        ; form op_2
+        inc si
+        call op_2_daddress
+
+        mov cmd_len, 3
+        ret
+    .mov_mem_ow_acc:
+        call cmd_name_mov
+        ; direction: reg -> direct memory
+        mov dh, first_byte
+        and dh, 1
+        mov w, dh
+        mov reg, 0
+        ; form op_1
+        inc si
+        call op_1_daddress
+        ; form op_2
+        call op_2_reg
+
+        mov cmd_len, 3
+        ret
+opc_Ah endp
+
+opc_Bh proc
+    .mov_reg_ow_imm:
+        call cmd_name_mov
+        mov dh, first_byte
+        shr dh, 3
+        and dh, 1
+        mov w, dh
+        inc dh
+        add cmd_len, dh
+        mov dh, first_byte
+        and dh, 7
+        mov reg, dh
+        ; form op_1 
+        call op_1_reg
+        ; form op_2
+        mov si, main_loop_si
+        inc si
+        call op_2_imm
+        ret
+opc_Bh endp
+
+opc_Ch proc
+    mov dh, first_byte
+    and dh, 15
+    cmp dh, 13
+    je .int
+    shr dh, 1
+    cmp dh, 3
+    je .mov_regmem_ow_imm
+    ret
+
+    .int:
+        call cmd_name_int
+        mov w, 0
+        inc si
+        call op_1_imm
+        mov cmd_len, 2
+        ret
+    .mov_regmem_ow_imm:
+        call cmd_name_mov
+        inc cmd_len
+        call parse_2nd_byte
+        mov dh, first_byte
+        and dh, 1
+        mov w, dh
+        inc dh
+        add cmd_len, dh
+        ; form op_1
+        call op_1_raddress
+        ; form op_2
+        mov dx, 2
+        add dl, cmd_off_b
+        mov si, main_loop_si
+        add si, dx
+        call op_2_imm
+        ret
+opc_Ch endp
+
+opc_Fh proc
+    mov dh, sec_byte
+    shr dh, 3
+    and dh, 7
+    cmp dh, 6
+    je .push_regmem
+    cmp dh, 1
+    je .dec_regmem
+    cmp dh, 0
+    je .inc_regmem
+    ret
+
+    .push_regmem:
+        ret   
+    .dec_regmem:
+        ret
+    .inc_regmem:
+        ret
+opc_Fh endp
 
 end start

@@ -7,10 +7,10 @@
 !*.asm
 !*.py
 
-!*.com
-
 # other
+!*.bat
 !*.zip
 !*.pdf
 !.gitignore
+!*.txt
 !*/
