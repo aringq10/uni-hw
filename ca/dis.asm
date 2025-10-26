@@ -50,8 +50,7 @@
     ; STUFF FOR FORMATING CMD OUTPUT
     ;
     cmd_address dw 100h
-    cmd_name db 32 dup (?)
-    cmd_name_len dw 0
+    cmd_name dw 0
 
     cmd_address_padding dw 8
     cmd_hex_padding dw 22
@@ -88,6 +87,19 @@
     output_line_len db 0
     
     hex_string db "0123456789ABCDEF"
+
+    ;
+    ; Command names
+    ;
+    cmd_name_len  dw 5
+    cn_mov  db "MOV  "
+    cn_int  db "INT  "
+    cn_pop  db "POP  "
+    cn_push db "PUSH "
+    cn_add  db "ADD  "
+    cn_sub  db "SUB  "
+    cn_cmp  db "CMP  "
+    cn_unk  db "UNK  "
 
     header db "Address|Command   Hex   Value|Command|Operands", 0ah
            db "----------------------------------------------", 0ah
@@ -127,16 +139,8 @@ mov1len macro
     mov op_1_len, dl
 endm
 
-op_by_dirm macro
-    local .d0
-    local .end
-    cmp d, 0
-    je .d0
-    mov [op_by_dir + 2], offset op_2
-    jmp .end
-    .d0:
-        mov [op_by_dir], offset op_1
-    .end:
+set_cmd macro name
+    mov cmd_name, offset name
 endm
 
 .code
@@ -304,7 +308,8 @@ first_filter proc
     push cx
     push si
     call format_seg_override
-    call cmd_name_unknown
+    set_cmd cn_unk
+    mov cmd_name_len, 5
 
     mov dh, first_byte
     shr dh, 4
@@ -767,7 +772,7 @@ format_cmd_hex endp
 
 format_cmd_name proc
     ; Format command name
-    mov si, offset cmd_name
+    mov si, cmd_name
     mov cx, cmd_name_len
     .format_cmd_name:
         mov al, [si]
@@ -978,33 +983,6 @@ byte_to_hex proc
     ret
 byte_to_hex endp
 
-cmd_name_mov proc
-    mov cmd_name_len, 3
-    mov di, offset cmd_name
-    mov byte ptr [di], 'M'
-    mov byte ptr [di + 1], 'O'
-    mov byte ptr [di + 2], 'V'
-    ret
-cmd_name_mov endp
-
-cmd_name_int proc
-    mov cmd_name_len, 3
-    mov di, offset cmd_name
-    mov byte ptr [di], 'I'
-    mov byte ptr [di + 1], 'N'
-    mov byte ptr [di + 2], 'T'
-    ret
-cmd_name_int endp
-
-cmd_name_unknown proc
-    mov cmd_name_len, 3
-    mov di, offset cmd_name
-    mov byte ptr [di], 'U'
-    mov byte ptr [di + 1], 'N'
-    mov byte ptr [di + 2], 'K'
-    ret
-cmd_name_unknown endp
-
 format_seg_override proc
     mov di, offset seg_override
     mov dh, first_byte
@@ -1126,6 +1104,7 @@ opc_4h endp
 opc_5h proc
     mov dh, first_byte
     shr dh, 3
+    and dh, 1
     cmp dh, 1
     je .pop_reg
     cmp dh, 0
@@ -1135,6 +1114,12 @@ opc_5h proc
     .pop_reg:
         ret
     .push_reg:
+        set_cmd cn_push
+        mov dh, first_byte
+        and dh, 7
+        mov reg, dh
+        mov w, 1
+        call op_1_reg
         ret   
 opc_5h endp
 
@@ -1144,18 +1129,18 @@ opc_8h proc
     cmp dh, 15
     je .pop_regmem
     shr dh, 2
-    cmp dh, 0
-    je .opc_8_00
     cmp dh, 2
     je .mov_reg_bw_regmem
     cmp dh, 3
     je .mov_regmem_bw_sreg
+    cmp dh, 0
+    je .opc_8_00
     ret
 
     .pop_regmem:
         ret
     .mov_reg_bw_regmem:
-        call cmd_name_mov
+        set_cmd cn_mov
         inc cmd_len
         call parse_2nd_byte
         mov dh, first_byte
@@ -1176,7 +1161,7 @@ opc_8h proc
             call op_2_raddress            
             ret
     .mov_regmem_bw_sreg:
-        call cmd_name_mov
+        set_cmd cn_mov
         inc cmd_len
         call parse_2nd_byte
         mov dh, first_byte
@@ -1226,7 +1211,7 @@ opc_Ah proc
     ret
 
     .mov_acc_ow_mem:
-        call cmd_name_mov
+        set_cmd cn_mov
         ; direction: direct memory -> reg
         mov dh, first_byte
         and dh, 1
@@ -1241,7 +1226,7 @@ opc_Ah proc
         mov cmd_len, 3
         ret
     .mov_mem_ow_acc:
-        call cmd_name_mov
+        set_cmd cn_mov
         ; direction: reg -> direct memory
         mov dh, first_byte
         and dh, 1
@@ -1259,7 +1244,7 @@ opc_Ah endp
 
 opc_Bh proc
     .mov_reg_ow_imm:
-        call cmd_name_mov
+        set_cmd cn_mov
         mov dh, first_byte
         shr dh, 3
         and dh, 1
@@ -1289,14 +1274,14 @@ opc_Ch proc
     ret
 
     .int:
-        call cmd_name_int
+        set_cmd cn_int
         mov w, 0
         inc si
         call op_1_imm
         mov cmd_len, 2
         ret
     .mov_regmem_ow_imm:
-        call cmd_name_mov
+        set_cmd cn_mov
         inc cmd_len
         call parse_2nd_byte
         mov dh, first_byte
@@ -1328,6 +1313,11 @@ opc_Fh proc
     ret
 
     .push_regmem:
+        set_cmd cn_push
+        inc cmd_len
+        call parse_2nd_byte
+        mov w, 1
+        call op_1_raddress
         ret   
     .dec_regmem:
         ret

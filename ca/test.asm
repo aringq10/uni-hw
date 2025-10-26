@@ -3,6 +3,13 @@
 org 100h
 
 start:
+    push ax
+    push bx
+    push di
+    push bp
+    push es:[si]
+    push cs:[bx+si]
+    push [bp+si+0304h]
 ;
 ; MOV 1: register <-> register/memory
 ;
