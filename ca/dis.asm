@@ -16,19 +16,6 @@
     fd_out dw ?
     buff_in db 512 dup(?)
 
-    ;
-    ; STATS FOR EACH CMD:
-    ; FIRST BYTE MAY HAVE FLAGS D AND W,
-    ; SECOND BYTE IS MADE UP OF MOD REG R/M
-    ;                            00 000 000
-    ; md - MOD
-    ; reg - REG
-    ; rm - R/M
-    ; 
-    ; cmd_off_b - AMOUNT OF OFFSET BYTES
-    ;                      (USED FOR COMPUTING ADDRESS)
-    ; cmd_offs - ACTUAL OFFSET BYTES
-    ;
     cmd_len db 0
     first_byte db 0
     sec_byte db 0
@@ -63,6 +50,34 @@
     op_2 db 32 dup (?)
     op_2_len db 0
     op_len db 0
+
+    regAL db "AL"
+    regCL db "CL"
+    regDL db "DL"
+    regBL db "BL"
+    regAH db "AH"
+    regCH db "CH"
+    regDH db "DH"
+    regBH db "BH"
+
+    regAX db "AX"
+    regCX db "CX"
+    regDX db "DX"
+    regBX db "BX"
+    regSP db "SP"
+    regBP db "BP"
+    regSI db "SI"
+    regDI db "DI"
+
+    regES db "ES"
+    regSS db "SS"
+    regCS db "CS"
+    regDS db "DS"
+
+    label registers
+    byteRegs  dw regAL,regCL,regDL,regBL,regAH,regCH,regDH,regBH
+    wordRegs  dw regAX,regCX,regDX,regBX,regSP,regBP,regSI,regDI
+    segRegs   dw regES,regSS,regCS,regDS
 
     reg_string_w0l db "ACDBACDB"
     reg_string_w0r db "LLLLHHHH"
