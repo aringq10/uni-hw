@@ -43,8 +43,7 @@
     cmd_hex_padding dw 22
     cmd_name_padding dw 8
     
-    seg_override db 3 dup (?)
-    seg_override_len db 0
+    seg_override db 4 dup (?)
     op_1 db 32 dup (?)
     op_1_len db 0
     op_2 db 32 dup (?)
@@ -56,26 +55,27 @@
     reg_string_w1l db "ACDBSBSD"
     reg_string_w1r db "XXXXPPII"
 
-    registers db "AL"
-              db "CL"
-              db "DL"
-              db "BL"
-              db "AH"
-              db "CH"
-              db "DH"
-              db "BH"
-              db "AX"
-              db "CX"
-              db "DX"
-              db "BX"
-              db "SP"
-              db "BP"
-              db "SI"
-              db "DI"
-              db "ES"
-              db "CS"
-              db "SS"
-              db "DS"
+    registers db "AL$"
+              db "CL$"
+              db "DL$"
+              db "BL$"
+              db "AH$"
+              db "CH$"
+              db "DH$"
+              db "BH$"
+              db "AX$"
+              db "CX$"
+              db "DX$"
+              db "BX$"
+              db "SP$"
+              db "BP$"
+              db "SI$"
+              db "DI$"
+              db "ES$"
+              db "CS$"
+              db "SS$"
+              db "DS$"
+              db "1$"
 
     sreg_string db "ES"
                 db "CS"
@@ -96,21 +96,23 @@
     
     hex_string db "0123456789ABCDEF"
 
-    ;
-    ; Command names
-    ;
+    ; Current command
+    cc_addr dw 0
+    cc_type db 0
+    cc_op_1 db 0
+    cc_op_2 db 0
+    tmp_op  db 0
 
     op_struct struc
-        cn_ptr dw 0
-        cmd_type   db 0
-        op_1_   db 0
-        op_2_   db 0
+        cn_ptr      dw 0
+        cmd_type    db 0
+        op_1_code   db 0
+        op_2_code   db 0
     ends
 
     include opcodes.inc
 
-    cmd_name_len dw 0
-
+    ; Strings for printing
     header db "Address|Command   Hex   Value|Command|Operands", 0ah
            db "----------------------------------------------", 0ah
     header_len dw 94
@@ -149,44 +151,12 @@ mov1len macro
     mov op_1_len, dl
 endm
 
-set_cmd macro name
-    mov cmd_name, offset name
-endm
-
 .code
 start:
     mov ax, @data
     mov ds, ax
     
-    xor cx, cx
-    mov cl, es:[80h]
-
-    ; read first arg
-    xor bx, bx
-    xor si, si
-    mov di, offset fn_in
-    call get_arg
-    cmp bx, 0
-    je print_err
-    cmp bx, 12
-    jg print_err
-    ; check for /?
-    cmp bx, 2
-    jne continue
-    cmp [fn_in], '/'
-    jne continue
-    cmp [fn_in + 1], '?'
-    je print_usage
-
-continue:
-    ; read second arg
-    xor bx, bx
-    mov di, offset fn_out
-    call get_arg
-    cmp bx, 0
-    je print_err
-    cmp bx, 12
-    jg print_err
+    call get_2_args
 
     ; open file 'fn_in' for reading
     mov ax, 3d00h
@@ -218,16 +188,6 @@ continue:
 ;
 ; INFO/ERR PRINTING
 ;
-print_err:
-    print_string err_msg
-    print_string newl
-    print_string usage_msg
-    terminate
-
-print_usage:
-    print_string usage_msg
-    terminate
-
 file_err:
     print_string file_err_msg
     mov bl, al
@@ -266,28 +226,21 @@ main_loop proc
         mov si, offset buff_in
 
         .command_parse_loop:
-            ;
             ; RESET CMD STATS
-            ;
             call reset_cmd_stats
             mov main_loop_si, si
 
-            ;
             ; LOAD TWO BYTES
-            ;
             mov al, [si]
             mov first_byte, al
             mov al, [si + 1]
             mov sec_byte, al
-            ;
+
             ; PARSE COMMAND
-            ;
             call decode_opc
 
-            ;
-            ; UPDATE CX AND
+            ; UPDATE CX, SI AND
             ; FORMAT OUTPUT
-            ;
             call format_output
             xor ah, ah
             mov al, cmd_len
@@ -295,9 +248,7 @@ main_loop proc
             add si, ax
             add cmd_address, ax
            
-            ; 
             ; WRITE TO FILE
-            ;
             call write_line_to_file 
             jc file_err
 
@@ -313,33 +264,55 @@ main_loop endp
 ; COMMAND PARSING
 ;
 decode_opc proc
+    push si
+    push cx
+
+    call format_seg_override
+
     mov ax, size op_struct
     mov bl, first_byte
     mul bl
 
     lea bx, opcodes
     add bx, ax
-
+    mov cc_addr, bx
     mov al, [bx].cmd_type
+
     cmp al, t_ext_opc
     jne .skip_ext_opc
-        mov ax, 2
-        mov dl, sec_byte
-        shr dl, 3
-        and dl, 7
-        mul dl
+    ; In case of extended opcode
+    mov ax, 2
+    mov dl, sec_byte
+    shr dl, 3
+    and dl, 7
+    mul dl
 
-        mov dx, [bx].cn_ptr
-        add dx, ax
-        mov bx, dx
-        mov ax, [bx]
-        mov cmd_name, ax
-        jmp .end_decode
+    mov dx, [bx].cn_ptr
+    add dx, ax
+    mov bx, dx
+    mov ax, [bx]
+    mov cmd_name, ax
+    jmp .end_decode
+
     .skip_ext_opc:
+
     mov ax, [bx].cn_ptr
     mov cmd_name, ax
 
     .end_decode:
+
+    mov bx, cc_addr
+    mov al, [bx].cmd_type
+    mov cc_type, al
+    mov al, [bx].op_1_code
+    mov cc_op_1, al
+    mov al, [bx].op_2_code
+    mov cc_op_2, al
+
+    call form_operands
+
+    pop cx
+    pop si
     ret
 decode_opc endp
 
@@ -437,6 +410,52 @@ parse_2nd_byte endp
 ;
 ; FORMATTING OPERANDS
 ;
+form_operands proc
+    mov di, offset op_1
+
+    cmp cc_op_1, op_none
+    je .end_forming
+    cmp cc_op_1, 21
+    jg .end_forming
+    mov al, cc_op_1
+    mov tmp_op, al
+    call op_predef
+
+    .skip_op1_predef:
+
+    mov byte ptr [di], '$'
+    mov di, offset op_2
+
+    cmp cc_op_2, op_none
+    je .end_forming
+    cmp cc_op_2, 21
+    jg .skip_op2_predef
+    mov al, cc_op_2
+    mov tmp_op, al
+    call op_predef
+
+    .skip_op2_predef:
+
+    mov byte ptr [di], '$'
+
+    .end_forming:
+        ret
+form_operands endp
+
+op_predef proc
+    mov ax, 3
+    mov bl, tmp_op
+    dec bl
+    mul bl
+
+    mov si, offset registers
+    add si, ax
+
+    call copy_str_until_ds
+
+    ret
+op_predef endp
+
 op_1_reg proc
     mov di, offset op_1
     call op_from_reg
@@ -745,13 +764,7 @@ format_cmd_hex endp
 format_cmd_name proc
     ; Format command name
     mov si, cmd_name
-    .format_cmd_name:
-        mov al, [si]
-        mov [di], al
-        inc di
-        inc si
-        cmp byte ptr [si], '$'
-        jne .format_cmd_name
+    call copy_str_until_ds
     ; Skip everything if op_1 isn't set
     ; cmp op_1_len, 0
     ; je .skip_cmd_name_padding
@@ -764,36 +777,25 @@ format_cmd_name proc
     ; loop .format_cmd_name_padding
 
     ; .skip_cmd_name_padding:
-        ret
+    ret
 format_cmd_name endp
 
 format_op_1 proc
+    mov byte ptr [di], ' '
+    inc di
     ; Format first operand
-    mov si, offset op_1
-    cmp byte ptr [si], '['
+    cmp byte ptr [op_1], '['
     jne .skip_op1_seg_override
-    cmp seg_override_len, 0
+    cmp byte ptr [seg_override], '$'
     je .skip_op1_seg_override
 
     mov si, offset seg_override
-    mov cx, 3
-    .format_op1_seg_override:
-        mov al, [si]
-        mov [di], al
-        inc di
-        inc si
-    loop .format_op1_seg_override
-    mov si, offset op_1
+    call copy_str_until_ds
 
     .skip_op1_seg_override:
-    xor ch, ch
-    mov cl, op_1_len
-    .format_op1:
-        mov al, [si]
-        mov [di], al
-        inc di
-        inc si
-    loop .format_op1
+    mov si, offset op_1
+    call copy_str_until_ds
+
     ret 
 format_op_1 endp
 
@@ -802,31 +804,19 @@ format_op_2 proc
     mov byte ptr [di + 1], ' '
     add di, 2
     ; Format second operand
-    mov si, offset op_2
-    cmp byte ptr [si], '['
+    cmp byte ptr [op_2], '['
     jne .skip_op2_seg_override
-    cmp seg_override_len, 0
+    cmp byte ptr [seg_override], '$'
     je .skip_op2_seg_override
 
     mov si, offset seg_override
-    mov cx, 3
-    .format_op2_seg_override:
-        mov al, [si]
-        mov [di], al
-        inc di
-        inc si
-    loop .format_op2_seg_override
-    mov si, offset op_2
+    call copy_str_until_ds
 
     .skip_op2_seg_override:
-    xor ch, ch
-    mov cl, op_2_len 
-    .format_op2:
-        mov al, [si]
-        mov [di], al
-        inc di
-        inc si
-    loop .format_op2
+
+    mov si, offset op_2
+    call copy_str_until_ds
+
     ret
 format_op_2 endp
 
@@ -838,12 +828,12 @@ format_output proc
     call format_cmd_address
     call format_cmd_hex
     call format_cmd_name
-    ; cmp op_1_len, 0
-    ; je .end_format
-    ; call format_op_1
-    ; cmp op_2_len, 0
-    ; je .end_format
-    ; call format_op_2
+    cmp byte ptr [op_1], '$'
+    je .end_format
+    call format_op_1
+    cmp byte ptr [op_2], '$'
+    je .end_format
+    call format_op_2
 
     .end_format:
     ; *Uncomment if viewing output.asm on a non-Unix machine
@@ -877,6 +867,49 @@ write_line_to_file endp
 ;
 ; HELPERS
 ;
+
+get_2_args proc
+    xor cx, cx
+    mov cl, es:[80h]
+
+    ; read first arg
+    xor si, si
+    mov di, offset fn_in
+    call get_arg
+    cmp bx, 0
+    je .print_err
+    cmp bx, 12
+    jg .print_err
+    ; check for /?
+    cmp bx, 2
+    jne .continue_to_sec_arg
+    cmp [fn_in], '/'
+    jne .continue_to_sec_arg
+    cmp [fn_in + 1], '?'
+    je .print_usage
+
+    .continue_to_sec_arg:
+    ; read second arg
+    mov di, offset fn_out
+    call get_arg
+    cmp bx, 0
+    je .print_err
+    cmp bx, 12
+    jg .print_err
+
+    ret
+
+    .print_err:
+        print_string err_msg
+        print_string newl
+        print_string usage_msg
+        terminate
+
+    .print_usage:
+        print_string usage_msg
+        terminate
+get_2_args endp
+
 get_arg proc
     ; Input:
     ; si - offset from start of arguments string
@@ -884,6 +917,7 @@ get_arg proc
     ; di - destination address for argument string
     ; Output:
     ; bx - argument's length
+    xor bx, bx
 
     .skip_spaces:
         cmp si, cx
@@ -927,9 +961,14 @@ reset_cmd_stats proc
     mov rm, 0
     mov sreg, 0
 
+    mov cc_addr, 0
+    mov cc_type, 0
+    mov cc_op_1, 0
+    mov cc_op_2, 0
+
     mov cmd_off_b, 0
-    mov op_1_len, 0
-    mov op_2_len, 0
+    mov byte ptr [op_1], '$'
+    mov byte ptr [op_2], '$'
     mov output_line_len, 0
     ret
 reset_cmd_stats endp
@@ -966,32 +1005,32 @@ format_seg_override proc
     je .seg_ov36h
     cmp dh, 3Eh
     je .seg_ov3Eh
-    mov seg_override_len, 0
+    mov byte ptr [seg_override], '$'
     ret
 
     .seg_ov26h:
-        mov seg_override_len, 3
         mov byte ptr [di], 'E'
         mov byte ptr [di + 1], 'S'
         mov byte ptr [di + 2], ':'
+        mov byte ptr [di + 3], '$'
         jmp .end_seg_ov
     .seg_ov2Eh:
-        mov seg_override_len, 3
         mov byte ptr [di], 'C'
         mov byte ptr [di + 1], 'S'
         mov byte ptr [di + 2], ':'
+        mov byte ptr [di + 3], '$'
         jmp .end_seg_ov
     .seg_ov36h:
-        mov seg_override_len, 3
         mov byte ptr [di], 'S'
         mov byte ptr [di + 1], 'S'
         mov byte ptr [di + 2], ':'
+        mov byte ptr [di + 3], '$'
         jmp .end_seg_ov
     .seg_ov3Eh:
-        mov seg_override_len, 3
         mov byte ptr [di], 'D'
         mov byte ptr [di + 1], 'S'
         mov byte ptr [di + 2], ':'
+        mov byte ptr [di + 3], '$'
 
     .end_seg_ov:
         inc cmd_len
@@ -1003,5 +1042,20 @@ format_seg_override proc
         inc main_loop_si
         ret
 format_seg_override endp
+
+copy_str_until_ds proc
+    cmp byte ptr [si], '$'
+    je .end_copy
+    .string_copy:
+        mov al, [si]
+        mov [di], al
+        inc di
+        inc si
+        cmp byte ptr [si], '$'
+        jne .string_copy
+
+    .end_copy:
+    ret
+copy_str_until_ds endp
 
 end start
