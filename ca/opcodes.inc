@@ -1,59 +1,65 @@
-; operand types:
-    op_none     equ 0
-; byte register
-    op_al       equ 1
-    op_cl       equ 2
-    op_dl       equ 3
-    op_bl       equ 4
-    op_ah       equ 5
-    op_ch       equ 6
-    op_dh       equ 7
-    op_bh       equ 8
-; word register
-    op_ax       equ 9
-    op_cx       equ 10
-    op_dx       equ 11
-    op_bx       equ 12
-    op_sp       equ 13
-    op_bp       equ 14
-    op_si       equ 15
-    op_di       equ 16
-; segment register
-    op_es       equ 17
-    op_cs       equ 18
-    op_ss       equ 19
-    op_ds       equ 20
+; TODO commands:
+;   REP
+;   REPNZ/REPNE
+;   MOVS
+;   CMPS
+;   SCAS
+;   LODS
+;   STOS
+;   CALL
+;   RET
+;   JMP
+;   ESC
 
-    op_1_const  equ 21
+; OPERAND TYPES
+; byte register
+    op_al       equ 0
+    op_cl       equ 1
+    op_dl       equ 2
+    op_bl       equ 3
+    op_ah       equ 4
+    op_ch       equ 5
+    op_dh       equ 6
+    op_bh       equ 7
+; word register
+    op_ax       equ 8
+    op_cx       equ 9
+    op_dx       equ 10
+    op_bx       equ 11
+    op_sp       equ 12
+    op_bp       equ 13
+    op_si       equ 14
+    op_di       equ 15
+; segment register
+    op_es       equ 16
+    op_cs       equ 17
+    op_ss       equ 18
+    op_ds       equ 19
+
+    op_1_const  equ 20
+    op_none     equ 21
 
 ; other
+    ; 22-26 need address byte
     op_reg8     equ 22
     op_reg16    equ 23
     op_regmem8  equ 24
     op_regmem16 equ 25
-    op_imm8     equ 26
-    op_imm16    equ 27
-    op_imm8_ext equ 28
+    op_sreg     equ 26
+    ; 27-30 no address byte needed
+    op_imm8     equ 27
+    op_imm16    equ 28
     op_daddr    equ 29
-    op_sreg     equ 30
-    op_port     equ 31
-    op_disp8    equ 32
+    op_disp8    equ 30
 
-; command types
-    t_unk       equ 33
-    t_normal    equ 34          ; opc, mod reg  r/m, disp
-    t_norm_sreg equ 35          ; opc, mod sreg r/m, disp
-    t_ext       equ 36          ; opc, mod reg  r/m, disp, imm
-    t_ext_opc   equ 37          ; opc, mod opc  r/m, disp, imm
-    t_disp8     equ 38          ; opc, disp8
-    t_imm       equ 39          ; opc, imm
-    t_daddr     equ 40          ; opc, direct address
-    t_2byte     equ 41
-    t_unsupp    equ 42
+; COMMAND TYPES
+    t_unk       equ 31
+    t_unsupp    equ 32
+    t_normal    equ 33
+    t_ext_opc   equ 34
+    t_2byte     equ 35
 
-; op_struct<cn_unk,t_unk,op_none,op_none>
-
-; command names
+; COMMAND NAMES
     cn_unk    db "UNK$"
     cn_unsupp db "UNSUPPORTED$"
     cn_aaa    db "AAA$"
@@ -147,7 +153,7 @@
     cn_segds  db "SEGDS$"
     cn_seges  db "SEGES$"
     cn_segss  db "SEGSS$"
-    cn_shl_sal db "SHL/SAL$"
+    cn_shl    db "SHL$"
     cn_shr    db "SHR$"
     cn_stc    db "STC$"
     cn_std    db "STD$"
@@ -166,75 +172,75 @@
 
 ; OPCODES 00-FF
 label opcodes
-    op_struct<cn_add,t_normal,op_regmem8,op_reg8>                   ; 00 ADD1
+    op_struct<cn_add,t_normal,op_regmem8,op_reg8>                   ; 00
     op_struct<cn_add,t_normal,op_regmem16,op_reg16>                 ; 01
     op_struct<cn_add,t_normal,op_reg8,op_regmem8>                   ; 02
     op_struct<cn_add,t_normal,op_reg16,op_regmem16>                 ; 03
-    op_struct<cn_add,t_imm,op_al,op_imm8>                           ; 04 ADD3
-    op_struct<cn_add,t_imm,op_ax,op_imm16>                          ; 05
-    op_struct<cn_push,t_normal,op_es,op_none>                       ; 06 PUSH3
-    op_struct<cn_pop,t_normal,op_es,op_none>                        ; 07 POP3
-    op_struct<cn_or,t_normal,op_regmem8,op_reg8>                    ; 08 OR1
+    op_struct<cn_add,t_normal,op_al,op_imm8>                        ; 04
+    op_struct<cn_add,t_normal,op_ax,op_imm16>                       ; 05
+    op_struct<cn_push,t_normal,op_es,op_none>                       ; 06
+    op_struct<cn_pop,t_normal,op_es,op_none>                        ; 07
+    op_struct<cn_or,t_normal,op_regmem8,op_reg8>                    ; 08
     op_struct<cn_or,t_normal,op_regmem16,op_reg16>                  ; 09
     op_struct<cn_or,t_normal,op_reg8,op_regmem8>                    ; 0A
     op_struct<cn_or,t_normal,op_reg16,op_regmem16>                  ; 0B
-    op_struct<cn_or,t_imm,op_al,op_imm8>                            ; 0C OR3
-    op_struct<cn_or,t_imm,op_ax,op_imm16>                           ; 0D
-    op_struct<cn_push,t_normal,op_cs,op_none>                       ; 0E PUSH3
-    op_struct<cn_pop,t_normal,op_cs,op_none>                        ; 0F POP3 
+    op_struct<cn_or,t_normal,op_al,op_imm8>                         ; 0C
+    op_struct<cn_or,t_normal,op_ax,op_imm16>                        ; 0D
+    op_struct<cn_push,t_normal,op_cs,op_none>                       ; 0E
+    op_struct<cn_pop,t_normal,op_cs,op_none>                        ; 0F
 
-    op_struct<cn_adc,t_normal,op_regmem8,op_reg8>                   ; 10 ADC1
+    op_struct<cn_adc,t_normal,op_regmem8,op_reg8>                   ; 10
     op_struct<cn_adc,t_normal,op_regmem16,op_reg16>                 ; 11
     op_struct<cn_adc,t_normal,op_reg8,op_regmem8>                   ; 12
     op_struct<cn_adc,t_normal,op_reg16,op_regmem16>                 ; 13
-    op_struct<cn_adc,t_imm,op_al,op_imm8>                           ; 14 ADC3
-    op_struct<cn_adc,t_imm,op_ax,op_imm16>                          ; 15
-    op_struct<cn_push,t_normal,op_ss,op_none>                       ; 16 PUSH3
-    op_struct<cn_pop,t_normal,op_ss,op_none>                        ; 17 POP3
-    op_struct<cn_sbb,t_normal,op_regmem8,op_reg8>                   ; 18 SBB1
+    op_struct<cn_adc,t_normal,op_al,op_imm8>                        ; 14
+    op_struct<cn_adc,t_normal,op_ax,op_imm16>                       ; 15
+    op_struct<cn_push,t_normal,op_ss,op_none>                       ; 16
+    op_struct<cn_pop,t_normal,op_ss,op_none>                        ; 17
+    op_struct<cn_sbb,t_normal,op_regmem8,op_reg8>                   ; 18
     op_struct<cn_sbb,t_normal,op_regmem16,op_reg16>                 ; 19
     op_struct<cn_sbb,t_normal,op_reg8,op_regmem8>                   ; 1A
     op_struct<cn_sbb,t_normal,op_reg16,op_regmem16>                 ; 1B
-    op_struct<cn_sbb,t_imm,op_al,op_imm8>                           ; 1C SBB3
-    op_struct<cn_sbb,t_imm,op_ax,op_imm16>                          ; 1D
-    op_struct<cn_push,t_normal,op_ds,op_none>                       ; 1E PUSH3
-    op_struct<cn_pop,t_normal,op_ds,op_none>                        ; 1F POP3
+    op_struct<cn_sbb,t_normal,op_al,op_imm8>                        ; 1C
+    op_struct<cn_sbb,t_normal,op_ax,op_imm16>                       ; 1D
+    op_struct<cn_push,t_normal,op_ds,op_none>                       ; 1E
+    op_struct<cn_pop,t_normal,op_ds,op_none>                        ; 1F
 
-    op_struct<cn_and,t_normal,op_regmem8,op_reg8>                   ; 20 AND1
+    op_struct<cn_and,t_normal,op_regmem8,op_reg8>                   ; 20
     op_struct<cn_and,t_normal,op_regmem16,op_reg16>                 ; 21
     op_struct<cn_and,t_normal,op_reg8,op_regmem8>                   ; 22
     op_struct<cn_and,t_normal,op_reg16,op_regmem16>                 ; 23
-    op_struct<cn_and,t_imm,op_al,op_imm8>                           ; 24 AND3
-    op_struct<cn_and,t_imm,op_ax,op_imm16>                          ; 25
+    op_struct<cn_and,t_normal,op_al,op_imm8>                        ; 24
+    op_struct<cn_and,t_normal,op_ax,op_imm16>                       ; 25
     op_struct<cn_unk,t_unk,op_none,op_none>
-    op_struct<cn_daa,t_normal,op_none,op_none>                      ; 27 DAA
-    op_struct<cn_sub,t_normal,op_regmem8,op_reg8>                   ; 28 SUB1
+    op_struct<cn_daa,t_normal,op_none,op_none>                      ; 27
+    op_struct<cn_sub,t_normal,op_regmem8,op_reg8>                   ; 28
     op_struct<cn_sub,t_normal,op_regmem16,op_reg16>                 ; 29
     op_struct<cn_sub,t_normal,op_reg8,op_regmem8>                   ; 2A
     op_struct<cn_sub,t_normal,op_reg16,op_regmem16>                 ; 2B
-    op_struct<cn_sub,t_imm,op_al,op_imm8>                           ; 2C SUB3
-    op_struct<cn_sub,t_imm,op_ax,op_imm16>                          ; 2D
+    op_struct<cn_sub,t_normal,op_al,op_imm8>                        ; 2C
+    op_struct<cn_sub,t_normal,op_ax,op_imm16>                       ; 2D
     op_struct<cn_unk,t_unk,op_none,op_none>
-    op_struct<cn_das,t_normal,op_none,op_none>                      ; 2F DAS
+    op_struct<cn_das,t_normal,op_none,op_none>                      ; 2F
 
-    op_struct<cn_xor,t_normal,op_regmem8,op_reg8>                   ; 30 XOR1
+    op_struct<cn_xor,t_normal,op_regmem8,op_reg8>                   ; 30
     op_struct<cn_xor,t_normal,op_regmem16,op_reg16>                 ; 31
     op_struct<cn_xor,t_normal,op_reg8,op_regmem8>                   ; 32
     op_struct<cn_xor,t_normal,op_reg16,op_regmem16>                 ; 33
-    op_struct<cn_xor,t_imm,op_al,op_imm8>                           ; 34 XOR3
-    op_struct<cn_xor,t_imm,op_ax,op_imm16>                          ; 35
+    op_struct<cn_xor,t_normal,op_al,op_imm8>                        ; 34
+    op_struct<cn_xor,t_normal,op_ax,op_imm16>                       ; 35
     op_struct<cn_unk,t_unk,op_none,op_none>
-    op_struct<cn_aaa,t_normal,op_none,op_none>                      ; 37 AAA
-    op_struct<cn_cmp,t_normal,op_regmem8,op_reg8>                   ; 38 CMP1
+    op_struct<cn_aaa,t_normal,op_none,op_none>                      ; 37
+    op_struct<cn_cmp,t_normal,op_regmem8,op_reg8>                   ; 38
     op_struct<cn_cmp,t_normal,op_regmem16,op_reg16>                 ; 39
     op_struct<cn_cmp,t_normal,op_reg8,op_regmem8>                   ; 3A
     op_struct<cn_cmp,t_normal,op_reg16,op_regmem16>                 ; 3B
-    op_struct<cn_cmp,t_imm,op_al,op_imm8>                           ; 3C CMP3
-    op_struct<cn_cmp,t_imm,op_ax,op_imm16>                          ; 3D
+    op_struct<cn_cmp,t_normal,op_al,op_imm8>                        ; 3C
+    op_struct<cn_cmp,t_normal,op_ax,op_imm16>                       ; 3D
     op_struct<cn_unk,t_unk,op_none,op_none>
-    op_struct<cn_aas,t_normal,op_none,op_none>                      ; 3F AAS
+    op_struct<cn_aas,t_normal,op_none,op_none>                      ; 3F
 
-    op_struct<cn_inc,t_normal,op_ax,op_none>                        ; 40 INC2
+    op_struct<cn_inc,t_normal,op_ax,op_none>                        ; 40
     op_struct<cn_inc,t_normal,op_cx,op_none>                        ; 41
     op_struct<cn_inc,t_normal,op_dx,op_none>                        ; 42
     op_struct<cn_inc,t_normal,op_bx,op_none>                        ; 43
@@ -242,7 +248,7 @@ label opcodes
     op_struct<cn_inc,t_normal,op_bp,op_none>                        ; 45
     op_struct<cn_inc,t_normal,op_si,op_none>                        ; 46
     op_struct<cn_inc,t_normal,op_di,op_none>                        ; 47
-    op_struct<cn_dec,t_normal,op_ax,op_none>                        ; 48 DEC2
+    op_struct<cn_dec,t_normal,op_ax,op_none>                        ; 48
     op_struct<cn_dec,t_normal,op_cx,op_none>                        ; 49
     op_struct<cn_dec,t_normal,op_dx,op_none>                        ; 4A
     op_struct<cn_dec,t_normal,op_bx,op_none>                        ; 4B
@@ -251,7 +257,7 @@ label opcodes
     op_struct<cn_dec,t_normal,op_si,op_none>                        ; 4E
     op_struct<cn_dec,t_normal,op_di,op_none>                        ; 4F
 
-    op_struct<cn_push,t_normal,op_ax,op_none>                       ; 50 PUSH2
+    op_struct<cn_push,t_normal,op_ax,op_none>                       ; 50
     op_struct<cn_push,t_normal,op_cx,op_none>                       ; 51
     op_struct<cn_push,t_normal,op_dx,op_none>                       ; 52
     op_struct<cn_push,t_normal,op_bx,op_none>                       ; 53
@@ -259,7 +265,7 @@ label opcodes
     op_struct<cn_push,t_normal,op_bp,op_none>                       ; 55
     op_struct<cn_push,t_normal,op_si,op_none>                       ; 56
     op_struct<cn_push,t_normal,op_di,op_none>                       ; 57
-    op_struct<cn_pop,t_normal,op_ax,op_none>                        ; 58 POP2
+    op_struct<cn_pop,t_normal,op_ax,op_none>                        ; 58
     op_struct<cn_pop,t_normal,op_cx,op_none>                        ; 59
     op_struct<cn_pop,t_normal,op_dx,op_none>                        ; 5A
     op_struct<cn_pop,t_normal,op_bx,op_none>                        ; 5B
@@ -285,41 +291,41 @@ label opcodes
     op_struct<cn_unsupp,t_unsupp,op_none,op_none>                   ; 6E
     op_struct<cn_unsupp,t_unsupp,op_none,op_none>                   ; 6F
 
-    op_struct<cn_jo,t_disp8,op_disp8,op_none>                       ; 70
-    op_struct<cn_jno,t_disp8,op_disp8,op_none>                      ; 71
-    op_struct<cn_jb,t_disp8,op_disp8,op_none>                       ; 72
-    op_struct<cn_jae,t_disp8,op_disp8,op_none>                      ; 73
-    op_struct<cn_jz,t_disp8,op_disp8,op_none>                       ; 74
-    op_struct<cn_jnz,t_disp8,op_disp8,op_none>                      ; 75
-    op_struct<cn_jbe,t_disp8,op_disp8,op_none>                      ; 76
-    op_struct<cn_ja,t_disp8,op_disp8,op_none>                       ; 77
-    op_struct<cn_js,t_disp8,op_disp8,op_none>                       ; 78
-    op_struct<cn_jns,t_disp8,op_disp8,op_none>                      ; 79
-    op_struct<cn_jpe,t_disp8,op_disp8,op_none>                      ; 7A
-    op_struct<cn_jpo,t_disp8,op_disp8,op_none>                      ; 7B
-    op_struct<cn_jl,t_disp8,op_disp8,op_none>                       ; 7C
-    op_struct<cn_jge,t_disp8,op_disp8,op_none>                      ; 7D
-    op_struct<cn_jle,t_disp8,op_disp8,op_none>                      ; 7E
-    op_struct<cn_jg,t_disp8,op_disp8,op_none>                       ; 7F
+    op_struct<cn_jo,t_normal,op_disp8,op_none>                      ; 70
+    op_struct<cn_jno,t_normal,op_disp8,op_none>                     ; 71
+    op_struct<cn_jb,t_normal,op_disp8,op_none>                      ; 72
+    op_struct<cn_jae,t_normal,op_disp8,op_none>                     ; 73
+    op_struct<cn_jz,t_normal,op_disp8,op_none>                      ; 74
+    op_struct<cn_jnz,t_normal,op_disp8,op_none>                     ; 75
+    op_struct<cn_jbe,t_normal,op_disp8,op_none>                     ; 76
+    op_struct<cn_ja,t_normal,op_disp8,op_none>                      ; 77
+    op_struct<cn_js,t_normal,op_disp8,op_none>                      ; 78
+    op_struct<cn_jns,t_normal,op_disp8,op_none>                     ; 79
+    op_struct<cn_jpe,t_normal,op_disp8,op_none>                     ; 7A
+    op_struct<cn_jpo,t_normal,op_disp8,op_none>                     ; 7B
+    op_struct<cn_jl,t_normal,op_disp8,op_none>                      ; 7C
+    op_struct<cn_jge,t_normal,op_disp8,op_none>                     ; 7D
+    op_struct<cn_jle,t_normal,op_disp8,op_none>                     ; 7E
+    op_struct<cn_jg,t_normal,op_disp8,op_none>                      ; 7F
 
     op_struct<ext_opc_80_83,t_ext_opc,op_regmem8,op_imm8>           ; 80 ext_opc_80_83
     op_struct<ext_opc_80_83,t_ext_opc,op_regmem16,op_imm16>         ; 81
     op_struct<ext_opc_80_83,t_ext_opc,op_regmem8,op_imm8>           ; 82
-    op_struct<ext_opc_80_83,t_ext_opc,op_regmem16,op_imm8_ext>      ; 83
-    op_struct<cn_test,t_normal,op_regmem8,op_reg8>                  ; 84 TEST1
+    op_struct<ext_opc_80_83,t_ext_opc,op_regmem16,op_imm8>          ; 83
+    op_struct<cn_test,t_normal,op_regmem8,op_reg8>                  ; 84
     op_struct<cn_test,t_normal,op_regmem16,op_reg16>                ; 85
-    op_struct<cn_xchg,t_normal,op_regmem8,op_reg8>                  ; 86 XCHG1
+    op_struct<cn_xchg,t_normal,op_regmem8,op_reg8>                  ; 86
     op_struct<cn_xchg,t_normal,op_regmem16,op_reg16>                ; 87
-    op_struct<cn_mov,t_normal,op_regmem8,op_reg8>                   ; 88 MOV1
+    op_struct<cn_mov,t_normal,op_regmem8,op_reg8>                   ; 88
     op_struct<cn_mov,t_normal,op_regmem16,op_reg16>                 ; 89
     op_struct<cn_mov,t_normal,op_reg8,op_regmem8>                   ; 8A
     op_struct<cn_mov,t_normal,op_reg16,op_regmem16>                 ; 8B
-    op_struct<cn_mov,t_norm_sreg,op_regmem16,op_sreg>               ; 8C MOV6
-    op_struct<cn_lea,t_normal,op_reg16,op_regmem16>                 ; 8D LEA
-    op_struct<cn_mov,t_norm_sreg,op_sreg,op_regmem16>               ; 8E MOV6
-    op_struct<cn_pop,t_normal,op_regmem16,op_none>                  ; 8F POP1
+    op_struct<cn_mov,t_normal,op_regmem16,op_sreg>                  ; 8C
+    op_struct<cn_lea,t_normal,op_reg16,op_regmem16>                 ; 8D
+    op_struct<cn_mov,t_normal,op_sreg,op_regmem16>                  ; 8E
+    op_struct<cn_pop,t_normal,op_regmem16,op_none>                  ; 8F
 
-    op_struct<cn_xchg,t_normal,op_ax,op_ax>                         ; 90 XCHG2
+    op_struct<cn_xchg,t_normal,op_ax,op_ax>                         ; 90
     op_struct<cn_xchg,t_normal,op_cx,op_ax>                         ; 91
     op_struct<cn_xchg,t_normal,op_dx,op_ax>                         ; 92
     op_struct<cn_xchg,t_normal,op_bx,op_ax>                         ; 93
@@ -327,8 +333,8 @@ label opcodes
     op_struct<cn_xchg,t_normal,op_bp,op_ax>                         ; 95
     op_struct<cn_xchg,t_normal,op_si,op_ax>                         ; 96
     op_struct<cn_xchg,t_normal,op_di,op_ax>                         ; 97
-    op_struct<cn_cbw,t_normal,op_none,op_none>                      ; 98 CBW
-    op_struct<cn_cwd,t_normal,op_none,op_none>                      ; 99 CWD
+    op_struct<cn_cbw,t_normal,op_none,op_none>                      ; 98
+    op_struct<cn_cwd,t_normal,op_none,op_none>                      ; 99
     op_struct<cn_unk,t_unk,op_none,op_none>
     op_struct<cn_wait,t_normal,op_none,op_none>                     ; 9B
     op_struct<cn_pushf,t_normal,op_none,op_none>                    ; 9C
@@ -336,15 +342,15 @@ label opcodes
     op_struct<cn_sahf,t_normal,op_none,op_none>                     ; 9E
     op_struct<cn_lahf,t_normal,op_none,op_none>                     ; 9F
 
-    op_struct<cn_mov,t_daddr,op_al,op_daddr>                         ; A0 MOV4
-    op_struct<cn_mov,t_daddr,op_ax,op_daddr>                         ; A1
-    op_struct<cn_mov,t_daddr,op_daddr,op_al>                         ; A2 MOV5
-    op_struct<cn_mov,t_daddr,op_daddr,op_ax>                         ; A3
+    op_struct<cn_mov,t_normal,op_al,op_daddr>                       ; A0
+    op_struct<cn_mov,t_normal,op_ax,op_daddr>                       ; A1
+    op_struct<cn_mov,t_normal,op_daddr,op_al>                       ; A2
+    op_struct<cn_mov,t_normal,op_daddr,op_ax>                       ; A3
     op_struct<cn_unk,t_unk,op_none,op_none>
     op_struct<cn_unk,t_unk,op_none,op_none>
     op_struct<cn_unk,t_unk,op_none,op_none>
     op_struct<cn_unk,t_unk,op_none,op_none>
-    op_struct<cn_test,t_normal,op_al,op_imm8>                       ; A8 TEST3
+    op_struct<cn_test,t_normal,op_al,op_imm8>                       ; A8
     op_struct<cn_test,t_normal,op_ax,op_imm16>                      ; A9
     op_struct<cn_stos,t_unk,op_none,op_none>
     op_struct<cn_stos,t_unk,op_none,op_none>
@@ -353,48 +359,48 @@ label opcodes
     op_struct<cn_unk,t_unk,op_none,op_none>
     op_struct<cn_unk,t_unk,op_none,op_none>
 
-    op_struct<cn_mov,t_imm,op_al,op_imm8>                           ; B0 MOV3
-    op_struct<cn_mov,t_imm,op_cl,op_imm8>                           ; B1
-    op_struct<cn_mov,t_imm,op_dl,op_imm8>                           ; B2
-    op_struct<cn_mov,t_imm,op_bl,op_imm8>                           ; B3
-    op_struct<cn_mov,t_imm,op_ah,op_imm8>                           ; B4
-    op_struct<cn_mov,t_imm,op_ch,op_imm8>                           ; B5
-    op_struct<cn_mov,t_imm,op_dh,op_imm8>                           ; B6
-    op_struct<cn_mov,t_imm,op_bh,op_imm8>                           ; B7
-    op_struct<cn_mov,t_imm,op_ax,op_imm16>                          ; B8
-    op_struct<cn_mov,t_imm,op_cx,op_imm16>                          ; B9
-    op_struct<cn_mov,t_imm,op_dx,op_imm16>                          ; BA
-    op_struct<cn_mov,t_imm,op_bx,op_imm16>                          ; BB
-    op_struct<cn_mov,t_imm,op_sp,op_imm16>                          ; BC
-    op_struct<cn_mov,t_imm,op_bp,op_imm16>                          ; BD
-    op_struct<cn_mov,t_imm,op_si,op_imm16>                          ; BE
-    op_struct<cn_mov,t_imm,op_di,op_imm16>                          ; BF
+    op_struct<cn_mov,t_normal,op_al,op_imm8>                        ; B0
+    op_struct<cn_mov,t_normal,op_cl,op_imm8>                        ; B1
+    op_struct<cn_mov,t_normal,op_dl,op_imm8>                        ; B2
+    op_struct<cn_mov,t_normal,op_bl,op_imm8>                        ; B3
+    op_struct<cn_mov,t_normal,op_ah,op_imm8>                        ; B4
+    op_struct<cn_mov,t_normal,op_ch,op_imm8>                        ; B5
+    op_struct<cn_mov,t_normal,op_dh,op_imm8>                        ; B6
+    op_struct<cn_mov,t_normal,op_bh,op_imm8>                        ; B7
+    op_struct<cn_mov,t_normal,op_ax,op_imm16>                       ; B8
+    op_struct<cn_mov,t_normal,op_cx,op_imm16>                       ; B9
+    op_struct<cn_mov,t_normal,op_dx,op_imm16>                       ; BA
+    op_struct<cn_mov,t_normal,op_bx,op_imm16>                       ; BB
+    op_struct<cn_mov,t_normal,op_sp,op_imm16>                       ; BC
+    op_struct<cn_mov,t_normal,op_bp,op_imm16>                       ; BD
+    op_struct<cn_mov,t_normal,op_si,op_imm16>                       ; BE
+    op_struct<cn_mov,t_normal,op_di,op_imm16>                       ; BF
 
     op_struct<cn_unk,t_unk,op_none,op_none>
     op_struct<cn_unk,t_unk,op_none,op_none>
     op_struct<cn_unk,t_unk,op_none,op_none>
     op_struct<cn_unk,t_unk,op_none,op_none>
-    op_struct<cn_les,t_normal,op_reg16,op_regmem16>                 ; C4 LES
-    op_struct<cn_lds,t_normal,op_reg16,op_regmem16>                 ; C5 LDS
-    op_struct<cn_mov,t_ext,op_imm8,op_regmem8>                      ; C6 MOV2
-    op_struct<cn_mov,t_ext,op_imm16,op_regmem8>                     ; C7
+    op_struct<cn_les,t_normal,op_reg16,op_regmem16>                 ; C4
+    op_struct<cn_lds,t_normal,op_reg16,op_regmem16>                 ; C5
+    op_struct<cn_mov,t_normal,op_regmem8,op_imm8>                   ; C6
+    op_struct<cn_mov,t_normal,op_regmem16,op_imm16>                 ; C7
     op_struct<cn_unk,t_unk,op_none,op_none>
     op_struct<cn_unk,t_unk,op_none,op_none>
     op_struct<cn_unk,t_unk,op_none,op_none>
     op_struct<cn_unk,t_unk,op_none,op_none>
     op_struct<cn_unk,t_unk,op_none,op_none>
-    op_struct<cn_int,t_normal,op_imm8,op_none>                      ; CD INT
+    op_struct<cn_int,t_normal,op_imm8,op_none>                      ; CD
     op_struct<cn_unk,t_unk,op_none,op_none>
-    op_struct<cn_iret,t_normal,op_none,op_none>                     ; CF IRET
+    op_struct<cn_iret,t_normal,op_none,op_none>                     ; CF
 
     op_struct<ext_opc_d0_d3,t_ext_opc,op_regmem8,op_1_const>        ; D0 ext_opc_d0_d3
     op_struct<ext_opc_d0_d3,t_ext_opc,op_regmem16,op_1_const>       ; D1
     op_struct<ext_opc_d0_d3,t_ext_opc,op_regmem8,op_cl>             ; D2
     op_struct<ext_opc_d0_d3,t_ext_opc,op_regmem16,op_cl>            ; D3
-    op_struct<cn_aam,t_2byte,op_none,op_none>                       ; D4 AAM
-    op_struct<cn_aad,t_2byte,op_none,op_none>                       ; D5 AAD
+    op_struct<cn_aam,t_2byte,op_none,op_none>                       ; D4
+    op_struct<cn_aad,t_2byte,op_none,op_none>                       ; D5
     op_struct<cn_unk,t_unk,op_none,op_none>
-    op_struct<cn_xlat,t_normal,op_none,op_none>                     ; D7 XLAT
+    op_struct<cn_xlat,t_normal,op_none,op_none>                     ; D7
     op_struct<cn_unk,t_unk,op_none,op_none>
     op_struct<cn_unk,t_unk,op_none,op_none>
     op_struct<cn_unk,t_unk,op_none,op_none>
@@ -404,21 +410,21 @@ label opcodes
     op_struct<cn_unk,t_unk,op_none,op_none>
     op_struct<cn_unk,t_unk,op_none,op_none>
 
-    op_struct<cn_loopnz,t_disp8,op_disp8,op_none>                   ; E0 LOOPNE/LOOPNZ
-    op_struct<cn_loopz,t_disp8,op_disp8,op_none>                    ; E1 LOOPE/LOOPZ
-    op_struct<cn_loop,t_disp8,op_disp8,op_none>                     ; E2 LOOP
-    op_struct<cn_jcxz,t_disp8,op_disp8,op_none>                     ; E3 JCXZ
-    op_struct<cn_in,t_normal,op_al,op_port>                         ; E4 IN1
-    op_struct<cn_in,t_normal,op_ax,op_port>                         ; E5
-    op_struct<cn_out,t_normal,op_port,op_al>                        ; E6 OUT1
-    op_struct<cn_out,t_normal,op_port,op_ax>                        ; E7
+    op_struct<cn_loopnz,t_normal,op_disp8,op_none>                  ; E0
+    op_struct<cn_loopz,t_normal,op_disp8,op_none>                   ; E1
+    op_struct<cn_loop,t_normal,op_disp8,op_none>                    ; E2
+    op_struct<cn_jcxz,t_normal,op_disp8,op_none>                    ; E3
+    op_struct<cn_in,t_normal,op_al,op_imm8>                         ; E4
+    op_struct<cn_in,t_normal,op_ax,op_imm8>                         ; E5
+    op_struct<cn_out,t_normal,op_imm8,op_al>                        ; E6
+    op_struct<cn_out,t_normal,op_imm8,op_ax>                        ; E7
     op_struct<cn_unk,t_unk,op_none,op_none>
     op_struct<cn_unk,t_unk,op_none,op_none>
     op_struct<cn_unk,t_unk,op_none,op_none>
     op_struct<cn_unk,t_unk,op_none,op_none>
-    op_struct<cn_in,t_normal,op_al,op_dx>                           ; EC IN2
+    op_struct<cn_in,t_normal,op_al,op_dx>                           ; EC
     op_struct<cn_in,t_normal,op_ax,op_dx>                           ; ED
-    op_struct<cn_out,t_normal,op_dx,op_al>                          ; EE OUT2
+    op_struct<cn_out,t_normal,op_dx,op_al>                          ; EE
     op_struct<cn_out,t_normal,op_dx,op_ax>                          ; EF
 
     op_struct<cn_lock,t_normal,op_none,op_none>                     ; F0
@@ -450,17 +456,18 @@ label ext_opc_80_83
     dw cn_cmp     ; CMP2 111
 
 label ext_opc_d0_d3
-    dw cn_rol     ; ROL     000
-    dw cn_ror     ; ROR     001
-    dw cn_rcl     ; RCL     010
-    dw cn_rcr     ; RCR     011
-    dw cn_shl_sal ; SHL/SAL 100
-    dw cn_shr     ; SHR     101
+    dw cn_rol     ; ROL 000
+    dw cn_ror     ; ROR 001
+    dw cn_rcl     ; RCL 010
+    dw cn_rcr     ; RCR 011
+    dw cn_shl     ; SHL 100
+    dw cn_shr     ; SHR 101
     dw cn_unsupp  ; - not used
-    dw cn_sar     ; SAR     111
+    dw cn_sar     ; SAR 111
+
 
 label ext_opc_f6_f7
-    dw cn_test    ; TEST2 000 - implement separately
+    dw cn_test    ; TEST2 000 - implement separately (op_regmem, op_imm)
     dw cn_unsupp  ; - not used
     dw cn_not     ; NOT   010
     dw cn_neg     ; NEG   011
