@@ -15,7 +15,10 @@
     fn_out db 255 dup(0)
     fd_in dw ?
     fd_out dw ?
-    buff_in db 512 dup(?)
+    buff db 512 dup(?)
+    buff_size dw 512
+    bytes_rem dw 0
+    eof dw 0
 
     ; Command characteristics
     cmd_len db 0
@@ -54,6 +57,7 @@
 
 
     ; Stuff for formatting output
+    disp_address dw 0
     cmd_address dw 100h
     cmd_name dw 0
     cmd_name_len dw 0
@@ -184,8 +188,6 @@ file_err:
 
 ; MAIN LOOP
 main_loop proc
-    ; Loop through input file in blocks of 512 bytes
-
     ; Print header
     mov cx, header_len
     mov ax, 4000h
@@ -194,53 +196,66 @@ main_loop proc
     int 21h
     jc file_err
 
-    .read_loop:
-        ; read from file
-        mov dx, offset buff_in
-        mov ax, 3f00h
-        mov bx, fd_in
-        mov cx, 512
-        int 21h
+    ; read first buff_size bytes
+    mov cx, buff_size
+    mov dx, offset buff
+    mov ax, 3f00h
+    mov bx, fd_in
+    int 21h
+    jc file_err
+
+    mov cx, ax
+    mov si, offset buff
+    cmp cx, 0
+    jne .command_parse_loop
+    ret
+
+    .command_parse_loop:
+        ; RESET CMD STATS
+        call reset_cmd_stats
+        mov main_loop_si, si
+
+        ; LOAD TWO BYTES
+        mov al, [si]
+        mov first_byte, al
+        mov al, [si + 1]
+        mov sec_byte, al
+
+        ; PARSE COMMAND AND
+        ; FORM OPERANDS
+        call decode_opc
+        call form_operands
+
+        ; UPDATE CX, SI AND
+        ; FORMAT OUTPUT
+        call format_output
+        xor ah, ah
+        mov al, cmd_len
+        sub cx, ax
+        add si, ax
+        add cmd_address, ax
+       
+        ; WRITE TO FILE
+        call write_line_to_file 
         jc file_err
 
-        mov cx, ax
-        jcxz .done
+        ; Read more bytes to fill buffer in case
+        ; there are less than 8 bytes left.
+        ; (max command length is 7 bytes)
+        cmp eof, 1
+        je .continue_parsing
+        cmp cx, 7
+        jg .continue_parsing
+        cmp cx, 1
+        jb .continue_parsing
+        
+        call update_buffer
 
-        mov si, offset buff_in
+        .continue_parsing:
+        cmp cx, 0
+        jg .command_parse_loop 
 
-        .command_parse_loop:
-            ; RESET CMD STATS
-            call reset_cmd_stats
-            mov main_loop_si, si
-
-            ; LOAD TWO BYTES
-            mov al, [si]
-            mov first_byte, al
-            mov al, [si + 1]
-            mov sec_byte, al
-
-            ; PARSE COMMAND
-            call decode_opc
-
-            ; UPDATE CX, SI AND
-            ; FORMAT OUTPUT
-            call format_output
-            xor ah, ah
-            mov al, cmd_len
-            sub cx, ax
-            add si, ax
-            add cmd_address, ax
-           
-            ; WRITE TO FILE
-            call write_line_to_file 
-            jc file_err
-
-            cmp cx, 0
-            jg .command_parse_loop 
-
-    jmp .read_loop
-    .done:
-        ret
+    ret
 main_loop endp
 
 ; COMMAND PARSING
@@ -303,9 +318,6 @@ decode_opc proc
     call implement_test_f6_f7
 
     .skip_f7_impl:
-
-    call form_operands
-
     pop cx
     pop si
     ret
@@ -404,6 +416,9 @@ parse_addr_byte endp
 
 ; FORMATTING OPERANDS
 form_operands proc
+    push si
+    push cx
+
     cmp cc_type, t_2byte
     jne .skip_t_2byte
     inc cmd_len
@@ -423,6 +438,8 @@ form_operands proc
     call form_op
 
     .end_forming_ops:
+    pop cx
+    pop si
     ret
 form_operands endp
 
@@ -448,7 +465,7 @@ form_op proc
     ret
     .skip_op_addr_byte:
     ; no address byte required
-    cmp tmp_op, 30
+    cmp tmp_op, 31
     jg .end_forming_op
     call op_no_addr_byte
     .end_forming_op:
@@ -525,13 +542,11 @@ op_no_addr_byte proc
     ret
 
     .imm8:
-        mov w, 0
-        call op_from_imm
+        call op_from_imm8
         inc cmd_len
         ret
     .imm16:
-        mov w, 1
-        call op_from_imm
+        call op_from_imm16
         add cmd_len, 2
         ret
     .daddr:
@@ -539,8 +554,12 @@ op_no_addr_byte proc
         add cmd_len, 2
         ret
     .disp8:
-        call op_from_disp8
         inc cmd_len
+        call op_from_disp8
+        ret
+    .disp16:
+        add cmd_len, 2
+        call op_from_disp16
         ret
 op_no_addr_byte endp
 
@@ -669,33 +688,30 @@ op_from_mem proc
     ret
 op_from_mem endp
 
-op_from_imm proc
-    ; op becomes an immediate value in hex
-    cmp w, 1
-    je .imm_w1
-    
-    .imm_w0:
-        mov bl, [si]
-        call byte_to_hex
-        mov [di], bh
-        mov [di + 1], bl
-        mov byte ptr [di + 2], 'h'
-        add di, 3
-        ret
-    .imm_w1:
-        mov bl, [si + 1]
-        call byte_to_hex
-        mov [di], bh
-        mov [di + 1], bl
+op_from_imm8 proc
+    mov bl, [si]
+    call byte_to_hex
+    mov [di], bh
+    mov [di + 1], bl
+    mov byte ptr [di + 2], 'h'
+    add di, 3
+    ret
+op_from_imm8 endp
 
-        mov bl, [si]
-        call byte_to_hex
-        mov [di + 2], bh
-        mov [di + 3], bl
-        mov byte ptr [di + 4], 'h'
-        add di, 5
-        ret
-op_from_imm endp
+op_from_imm16 proc
+    mov bl, [si + 1]
+    call byte_to_hex
+    mov [di], bh
+    mov [di + 1], bl
+
+    mov bl, [si]
+    call byte_to_hex
+    mov [di + 2], bh
+    mov [di + 3], bl
+    mov byte ptr [di + 4], 'h'
+    add di, 5
+    ret
+op_from_imm16 endp
 
 op_from_daddress proc
     ; Formats 2 byte direct address from [si] and
@@ -723,31 +739,76 @@ op_from_daddress proc
 op_from_daddress endp
 
 op_from_disp8 proc
-    mov dh, [si]
-    mov bl, [si]
-    and dh, 10000000b
-    cmp dh, 10000000b
-    jne .skip_neg_disp8
-    mov byte ptr [di], '-'
+    mov dx, cmd_address
+    mov disp_address, dx
+
+    xor dh, dh
+    mov dl, [si]
+    mov al, [si]
+    and al, 80h
+    cmp al, 80h
+    jne .add_disp8
+
+    .sub_disp8:
+    xor dl, 0FFh
+    dec dl
+    sub disp_address, dx
+    jmp .end_disp8
+
+    .add_disp8:
+    add disp_address, dx
+    mov dl, cmd_len
+    add disp_address, dx
+
+    .end_disp8:
+    mov si, offset disp_address
+    mov byte ptr [di], '['
     inc di
-    xor bl, 11111111b
-    dec bl
-    .skip_neg_disp8:
-    call byte_to_hex
-    mov [di], bh
-    mov [di + 1], bl
-    mov byte ptr [di + 2], 'h'
-    add di, 3
+    call op_from_imm16
+    mov byte ptr [di], ']'
+    inc di
 
     ret
 op_from_disp8 endp
 
+op_from_disp16 proc
+    mov dx, cmd_address
+    mov disp_address, dx
+
+    mov dx, [si]
+    mov ax, [si]
+    and ax, 8000h
+    cmp ax, 8000h
+    jne .add_disp16
+
+    .sub_disp16:
+    xor dx, 0FFFFh
+    dec dx
+    sub disp_address, dx
+    jmp .end_disp16
+
+    .add_disp16:
+    add disp_address, dx
+    xor dh, dh
+    mov dl, cmd_len
+    add disp_address, dx
+
+    .end_disp16:
+    mov si, offset disp_address
+    mov byte ptr [di], '['
+    inc di
+    call op_from_imm16
+    mov byte ptr [di], ']'
+    inc di
+
+    ret
+op_from_disp16 endp
+
 ; FORMATTING FINAL OUTPUT
 format_cmd_address proc
     ; Format command address
-    mov w, 1
     mov si, offset cmd_address
-    call op_from_imm
+    call op_from_imm16
     ; Format padding
     mov cx, cmd_address_padding
     sub cx, 5
@@ -756,6 +817,7 @@ format_cmd_address proc
 format_cmd_address endp
 
 format_cmd_hex proc
+    mov si, main_loop_si
     ; Format current command's hex value
     xor ch, ch
     mov cl, cmd_len
@@ -863,6 +925,7 @@ format_output proc
     ret
 format_output endp
 
+; HELPERS
 write_line_to_file proc
     push cx
     xor ah, ah
@@ -876,7 +939,49 @@ write_line_to_file proc
     ret
 write_line_to_file endp
 
-; HELPERS
+update_buffer proc
+    ; Copy last bytes to start
+    ; Set new SI = offset buff
+    ;         CX = bytes read + bytes_rem
+    mov bytes_rem, cx
+    mov di, offset buff
+    .rewrite_to_start:
+        mov al, [si]
+        mov [di], al
+        inc di
+        inc si
+    loop .rewrite_to_start
+
+    mov si, offset buff
+
+    mov cx, buff_size
+    sub cx, bytes_rem
+    mov dx, offset buff
+    add dx, bytes_rem
+    mov ax, 3f00h
+    mov bx, fd_in
+    int 21h
+    jc file_err_2
+
+    mov cx, ax
+    cmp cx, 0
+    jne .not_eof
+    mov eof, 1
+    .not_eof:
+    add cx, bytes_rem
+
+    ret
+
+    file_err_2:
+        print_string file_err_msg
+        mov bl, al
+        call byte_to_hex
+        print_char bh
+        print_char bl
+        print_char 'h'
+        terminate
+update_buffer endp
+
 get_2_args proc
     xor cx, cx
     mov cl, es:[80h]

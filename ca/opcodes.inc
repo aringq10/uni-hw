@@ -6,9 +6,8 @@
 ;   SCAS
 ;   LODS
 ;   STOS
-;   CALL
-;   RET
-;   JMP
+;   CALL3
+;   JMP4
 ;   ESC
 
 ; OPERAND TYPES
@@ -51,13 +50,14 @@
     op_imm16    equ 28
     op_daddr    equ 29
     op_disp8    equ 30
+    op_disp16   equ 31
 
 ; COMMAND TYPES
-    t_unk       equ 31
-    t_unsupp    equ 32
-    t_normal    equ 33
-    t_ext_opc   equ 34
-    t_2byte     equ 35
+    t_unk       equ 32
+    t_unsupp    equ 33
+    t_normal    equ 34
+    t_ext_opc   equ 35
+    t_2byte     equ 36
 
 ; COMMAND NAMES
     cn_unk    db "UNK$"
@@ -138,6 +138,7 @@
     cn_rcr    db "RCR$"
     cn_rep    db "REP$"
     cn_repne  db "REPNE$"
+    cn_ret    db "RET$"
     cn_retf   db "RETF$"
     cn_retn   db "RETN$"
     cn_repz   db "REPZ$"
@@ -378,16 +379,16 @@ label opcodes
 
     op_struct<cn_unk,t_unk,op_none,op_none>
     op_struct<cn_unk,t_unk,op_none,op_none>
-    op_struct<cn_unk,t_unk,op_none,op_none>
-    op_struct<cn_unk,t_unk,op_none,op_none>
+    op_struct<cn_ret,t_normal,op_imm16,op_none>                     ; C2
+    op_struct<cn_ret,t_normal,op_none,op_none>                      ; C3
     op_struct<cn_les,t_normal,op_reg16,op_regmem16>                 ; C4
     op_struct<cn_lds,t_normal,op_reg16,op_regmem16>                 ; C5
     op_struct<cn_mov,t_normal,op_regmem8,op_imm8>                   ; C6
     op_struct<cn_mov,t_normal,op_regmem16,op_imm16>                 ; C7
     op_struct<cn_unk,t_unk,op_none,op_none>
     op_struct<cn_unk,t_unk,op_none,op_none>
-    op_struct<cn_unk,t_unk,op_none,op_none>
-    op_struct<cn_unk,t_unk,op_none,op_none>
+    op_struct<cn_ret,t_normal,op_imm16,op_none>                     ; CA
+    op_struct<cn_ret,t_normal,op_none,op_none>                      ; CB
     op_struct<cn_unk,t_unk,op_none,op_none>
     op_struct<cn_int,t_normal,op_imm8,op_none>                      ; CD
     op_struct<cn_unk,t_unk,op_none,op_none>
@@ -418,10 +419,10 @@ label opcodes
     op_struct<cn_in,t_normal,op_ax,op_imm8>                         ; E5
     op_struct<cn_out,t_normal,op_imm8,op_al>                        ; E6
     op_struct<cn_out,t_normal,op_imm8,op_ax>                        ; E7
+    op_struct<cn_call,t_normal,op_daddr,op_none>                    ; E8
+    op_struct<cn_jmp,t_normal,op_disp16,op_none>
     op_struct<cn_unk,t_unk,op_none,op_none>
-    op_struct<cn_unk,t_unk,op_none,op_none>
-    op_struct<cn_unk,t_unk,op_none,op_none>
-    op_struct<cn_unk,t_unk,op_none,op_none>
+    op_struct<cn_jmp,t_normal,op_disp8,op_none>                     ; EB
     op_struct<cn_in,t_normal,op_al,op_dx>                           ; EC
     op_struct<cn_in,t_normal,op_ax,op_dx>                           ; ED
     op_struct<cn_out,t_normal,op_dx,op_al>                          ; EE
@@ -477,11 +478,11 @@ label ext_opc_f6_f7
     dw cn_idiv    ; IDIV  111
 
 label ext_opc_fe_ff
-    dw cn_inc     ; INC1 000
-    dw cn_dec     ; DEC1 001
-    dw cn_unk     ; -
-    dw cn_unk     ; -
-    dw cn_unk     ; -
-    dw cn_unk     ; -
+    dw cn_inc     ; INC1  000
+    dw cn_dec     ; DEC1  001
+    dw cn_call    ; CALL2 010
+    dw cn_call    ; CALL4 011
+    dw cn_jmp     ; JMP3  100
+    dw cn_jmp     ; JMP5  101
     dw cn_push    ; PUSH1 110
     dw cn_unsupp  ; - not used
