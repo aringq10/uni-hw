@@ -3,6 +3,9 @@
 org 100h
 
 start:
+    mov dl, var8
+    mov bx, var16
+
     and	[bx+si], ah
     and	[bx+si], ah
     or ax, 240Ah

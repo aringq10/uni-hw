@@ -1,6 +1,6 @@
 
     ;
-    ; A dissembler for 8086 assembly .COM files:
+    ; A disassembler for 8086 assembly .COM files:
     ; used dosbox, tasm and tlink.
     ;
     ; Usage:
@@ -24,14 +24,13 @@
     cmd_len db 0
     first_byte db 0
     sec_byte db 0
-    w db 0
     md db 0
     reg db 0
     tmp_reg db 0
     rm db 0
-    cmd_off_b db 0
-    cmd_offs db 0, 0
-    cmd_offs_hex db 6 dup(?)
+    cmd_disp_len db 0
+    cmd_disp_b db 0, 0
+    cmd_disp_hex db 6 dup(?)
 
     ; Current command
     cc_addr dw 0
@@ -55,7 +54,6 @@
 
     include opcodes.inc
 
-
     ; Stuff for formatting output
     disp_address dw 0
     cmd_address dw 100h
@@ -66,12 +64,13 @@
     cmd_hex_padding dw 22
     cmd_name_padding dw 8
     
-    seg_ov  dw 0
+    seg_ov dw 0
     seg_ov_string db "ES:$"
                   db "CS:$"
                   db "SS:$"
                   db "DS:$"
                   db "$"
+
     op_1 db 32 dup (?)
     op_2 db 32 dup (?)
 
@@ -107,7 +106,7 @@
                  db "BX$"
 
     output_line db 255 dup (?)
-    output_line_len db 0
+    output_line_len dw 0
     
     hex_string db "0123456789ABCDEF"
 
@@ -324,6 +323,8 @@ decode_opc proc
 decode_opc endp
 
 parse_addr_byte proc
+    push di
+
     mov addr_b_parsed_f, 1
     mov si, main_loop_si
 
@@ -355,62 +356,54 @@ parse_addr_byte proc
     je .md3
     ret
     
-    ; store displacement bytes in cmd_offs,
-    ; their count in cmd_off_b and
-    ; their hex value in cmd_offs_hex
+    ; Store displacement bytes in cmd_disp_b,
+    ; their count in cmd_disp_len and
+    ; their hex value in cmd_disp_hex.
+    ; Update cmd_len accordingly
     .md0:
         cmp rm, 6
         jne .skip_rm6
         jmp .md2 
         .skip_rm6:
-            mov cmd_off_b, 0 
+            mov cmd_disp_len, 0
         jmp .disp_to_hex
     .md1:
         inc cmd_len
-        mov cmd_off_b, 1
+        mov cmd_disp_len, 1
         mov al, [si + 2]
-        mov [cmd_offs], al
-        mov [cmd_offs + 1], 0
+        mov [cmd_disp_b], al
         jmp .disp_to_hex
     .md2:
         add cmd_len, 2
-        mov cmd_off_b, 2
+        mov cmd_disp_len, 2
         mov al, [si + 2]
-        mov [cmd_offs], al
+        mov [cmd_disp_b], al
         mov al, [si + 3]
-        mov [cmd_offs + 1], al
+        mov [cmd_disp_b + 1], al
         jmp .disp_to_hex
     .md3:
-        mov cmd_off_b, 0 
+        mov cmd_disp_len, 0 
 
     .disp_to_hex:
-        cmp cmd_off_b, 1
-        je .one_byte_offset
-        cmp cmd_off_b, 2
-        je .two_byte_offset
-        mov byte ptr [cmd_offs_hex], '$'
-        ret
+        mov si, offset cmd_disp_b
+        mov di, offset cmd_disp_hex
 
-    .one_byte_offset:
-        mov bl, [cmd_offs]
-        call byte_to_hex
-        mov [cmd_offs_hex], bh
-        mov [cmd_offs_hex + 1], bl
-        mov byte ptr [cmd_offs_hex + 2], 'h'
-        mov byte ptr [cmd_offs_hex + 3], '$'
-        ret
+        cmp cmd_disp_len, 1
+        je .one_byte_disp
+        cmp cmd_disp_len, 2
+        je .two_byte_disp
+        jmp .end_pars_addr_b
 
-    .two_byte_offset:
-        mov bl, [cmd_offs + 1]
-        call byte_to_hex
-        mov [cmd_offs_hex], bh
-        mov [cmd_offs_hex + 1], bl       
-        mov bl, [cmd_offs]
-        call byte_to_hex
-        mov [cmd_offs_hex + 2], bh
-        mov [cmd_offs_hex + 3], bl
-        mov byte ptr [cmd_offs_hex + 4], 'h'
-        mov byte ptr [cmd_offs_hex + 5], '$'
+    .one_byte_disp:
+        call op_from_imm8
+        jmp .end_pars_addr_b
+
+    .two_byte_disp:
+        call op_from_imm16
+
+    .end_pars_addr_b:
+        mov byte ptr [di], '$'
+        pop di
         ret
 parse_addr_byte endp
 
@@ -487,15 +480,15 @@ op_predef proc
 op_predef endp
 
 op_addr_byte proc
-    inc imm_offset
-
     cmp addr_b_parsed_f, 1
     je .skip_addr_b_parse
     call parse_addr_byte
     .skip_addr_b_parse:
 
+    ; Update imm_offset in case op_2 is of type imm
+    inc imm_offset
     xor ah, ah
-    mov al, cmd_off_b
+    mov al, cmd_disp_len
     add imm_offset, ax
 
     cmp tmp_op, op_reg8
@@ -564,9 +557,7 @@ op_no_addr_byte proc
 op_no_addr_byte endp
 
 op_from_reg8 proc
-    ; Determines register from reg, puts
-    ; its text representation into [di]
-
+    ; Uses 'registers' string to form op_reg8
     mov bl, reg
     mov tmp_op, bl
     call op_predef
@@ -574,9 +565,7 @@ op_from_reg8 proc
 op_from_reg8 endp
 
 op_from_reg16 proc
-    ; Determines register from reg and w, puts
-    ; its text representation into [di]
-
+    ; Uses 'registers' string to form op_reg16
     mov bl, reg
     add bl, 8
     mov tmp_op, bl
@@ -585,19 +574,17 @@ op_from_reg16 proc
 op_from_reg16 endp
 
 op_from_sreg proc
-    ; Determines segment register from reg, 
-    ; puts its text representation into [di]
-
+    ; Uses 'registers' string to form op_sreg
     xor ah, ah
     mov al, reg
     add ax, 16
     mov tmp_op, al
     call op_predef
-
     ret
 op_from_sreg endp
 
 op_from_regmem8 proc
+    ; In case of register, refer to op_from_reg8
     cmp md, 11b
     jne .real_raddr8
     mov al, reg
@@ -616,6 +603,7 @@ op_from_regmem8 proc
 op_from_regmem8 endp
 
 op_from_regmem16 proc
+    ; In case of register, refer to op_from_reg16
     cmp md, 11b
     jne .real_raddr16
     mov al, reg
@@ -651,7 +639,7 @@ op_from_mem proc
         add si, ax
         jmp .write_pre_disp
     .rm47:
-        cmp rm, 6   ; skip when r/m = 110 and mod = 00
+        cmp rm, 6   ; direct address when r/m = 110 and mod = 00
         jne .skip_rm6_md0
         cmp md, 0
         je .daddress_md0_rm6
@@ -666,7 +654,7 @@ op_from_mem proc
         call copy_str_until_ds
 
     .daddress_md0_rm6:
-    mov si, offset cmd_offs_hex
+    mov si, offset cmd_disp_hex
     cmp byte ptr [si], '$'
     je .skip_disp
 
@@ -714,18 +702,15 @@ op_from_imm16 proc
 op_from_imm16 endp
 
 op_from_daddress proc
-    ; Formats 2 byte direct address from [si] and
-    ; writes its text representation into [di]
-
     mov byte ptr [di], '['
     inc di
-    ; first byte
+
     mov bl, [si + 1]
     call byte_to_hex
     mov [di], bh
     mov [di + 1], bl
     add di, 2
-    ; second byte
+
     mov bl, [si]
     call byte_to_hex
     mov [di], bh
@@ -918,7 +903,7 @@ format_output proc
 
     sub di, offset output_line
     mov bx, di
-    mov output_line_len, bl
+    mov output_line_len, bx
 
     pop si
     pop cx
@@ -928,9 +913,7 @@ format_output endp
 ; HELPERS
 write_line_to_file proc
     push cx
-    xor ah, ah
-    mov al, output_line_len
-    mov cx, ax
+    mov cx, output_line_len
     mov ax, 4000h
     mov bx, fd_out
     mov dx, offset output_line
@@ -1026,7 +1009,7 @@ get_2_args endp
 
 get_arg proc
     ; Input:
-    ; si - offset from start of arguments string
+    ; si - offset from start of cli arguments string
     ; cx - total length or arguments string at 80h
     ; di - destination address for argument string
     ; Output:
@@ -1054,6 +1037,7 @@ get_arg proc
         je .end_arg
         cmp al, 9
         je .end_arg
+        cmp al, 0Dh
         je .end_arg
 
         mov [di], al
@@ -1068,7 +1052,6 @@ get_arg endp
 
 reset_cmd_stats proc
     mov cmd_len, 1
-    mov w, 0
     mov md, 0
     mov reg, 0
     mov rm, 0
@@ -1081,7 +1064,7 @@ reset_cmd_stats proc
     mov addr_b_parsed_f, 0
     mov imm_offset, 1
 
-    mov cmd_off_b, 0
+    mov cmd_disp_len, 0
     mov byte ptr [op_1], '$'
     mov byte ptr [op_2], '$'
     mov output_line_len, 0
@@ -1141,7 +1124,6 @@ check_seg_ov proc
         mov first_byte, al
         mov al, [si + 2]
         mov sec_byte, al
-        inc si
         inc main_loop_si
         ret
 check_seg_ov endp
