@@ -94,7 +94,8 @@
               db "CS$"
               db "SS$"
               db "DS$"
-              db "1$"
+              db "1 $"
+              db "3$"
 
     mem_struct03 db "BX + SI$"
                  db "BX + DI$"
@@ -444,22 +445,22 @@ form_op proc
     ret
     .skip_op_none:
     ; predefined op
-    cmp tmp_op, 21
-    jg .skip_op_predef
+    cmp tmp_op, 30
+    jnb .skip_op_predef
     call op_predef
     mov byte ptr [di], '$'
     ret
     .skip_op_predef:
     ; op requires address byte
-    cmp tmp_op, 26
-    jg .skip_op_addr_byte
+    cmp tmp_op, 40
+    jnb .skip_op_addr_byte
     call op_addr_byte
     mov byte ptr [di], '$'
     ret
     .skip_op_addr_byte:
     ; no address byte required
-    cmp tmp_op, 31
-    jg .end_forming_op
+    cmp tmp_op, 50
+    jnb .end_forming_op
     call op_no_addr_byte
     .end_forming_op:
         mov byte ptr [di], '$'
@@ -530,8 +531,12 @@ op_no_addr_byte proc
     je .imm16
     cmp tmp_op, op_daddr
     je .daddr
+    cmp tmp_op, op_faddr
+    je .faddr
     cmp tmp_op, op_disp8
     je .disp8
+    cmp tmp_op, op_disp16
+    je .disp16
     ret
 
     .imm8:
@@ -545,6 +550,10 @@ op_no_addr_byte proc
     .daddr:
         call op_from_daddress
         add cmd_len, 2
+        ret
+    .faddr:
+        call op_from_faddress
+        add cmd_len, 4
         ret
     .disp8:
         inc cmd_len
@@ -722,6 +731,22 @@ op_from_daddress proc
     add di, 2
     ret
 op_from_daddress endp
+
+op_from_faddress proc
+    mov byte ptr [di], '['
+    inc di
+
+    add si, 2
+    call op_from_imm16
+    mov byte ptr [di], ':'
+    inc di
+
+    sub si, 2
+    call op_from_imm16
+    mov byte ptr [di], ']'
+    inc di
+    ret
+op_from_faddress endp
 
 op_from_disp8 proc
     mov dx, cmd_address

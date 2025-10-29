@@ -38,7 +38,7 @@ Pradzia:
 	MOV	dx, offset bufDydis
 	INT	21h
 
-	MOV	ah, 9
+    MOV	ah, 9
 	MOV	dx, offset enteris
 	INT	21h
 
