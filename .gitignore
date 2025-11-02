@@ -8,6 +8,9 @@
 !*.py
 !*.inc
 
+# english
+!*.docx
+
 # other
 !*.bat
 !*.zip
