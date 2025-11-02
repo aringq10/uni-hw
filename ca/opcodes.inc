@@ -1,6 +1,3 @@
-; TODO commands:
-;   ESC
-
 ; OPERAND TYPES
 ; byte register
     op_al       equ 0
@@ -77,6 +74,14 @@
     cn_das    db "DAS$"
     cn_dec    db "DEC$"
     cn_div    db "DIV$"
+    cn_esc0   db "ESC0$"
+    cn_esc1   db "ESC1$"
+    cn_esc2   db "ESC2$"
+    cn_esc3   db "ESC3$"
+    cn_esc4   db "ESC4$"
+    cn_esc5   db "ESC5$"
+    cn_esc6   db "ESC6$"
+    cn_esc7   db "ESC7$"
     cn_hlt    db "HLT$"
     cn_idiv   db "IDIV$"
     cn_imul   db "IMUL$"
@@ -395,14 +400,14 @@ label opcodes
     op_struct<cn_aad,t_2byte,op_none,op_none>                       ; D5
     op_struct<cn_unsupp,t_unsupp,op_none,op_none>                   ; D6
     op_struct<cn_xlat,t_normal,op_none,op_none>                     ; D7
-    op_struct<cn_unk,t_unk,op_none,op_none>
-    op_struct<cn_unk,t_unk,op_none,op_none>
-    op_struct<cn_unk,t_unk,op_none,op_none>
-    op_struct<cn_unk,t_unk,op_none,op_none>
-    op_struct<cn_unk,t_unk,op_none,op_none>
-    op_struct<cn_unk,t_unk,op_none,op_none>
-    op_struct<cn_unk,t_unk,op_none,op_none>
-    op_struct<cn_unk,t_unk,op_none,op_none>
+    op_struct<cn_esc0,t_normal,op_regmem8,op_none>                  ; D8
+    op_struct<cn_esc1,t_normal,op_regmem8,op_none>                  ; D9
+    op_struct<cn_esc2,t_normal,op_regmem8,op_none>                  ; DA
+    op_struct<cn_esc3,t_normal,op_regmem8,op_none>                  ; DB
+    op_struct<cn_esc4,t_normal,op_regmem8,op_none>                  ; DC
+    op_struct<cn_esc5,t_normal,op_regmem8,op_none>                  ; DD
+    op_struct<cn_esc6,t_normal,op_regmem8,op_none>                  ; DE
+    op_struct<cn_esc7,t_normal,op_regmem8,op_none>                  ; DF
 
     op_struct<cn_loopnz,t_normal,op_disp8,op_none>                  ; E0
     op_struct<cn_loopz,t_normal,op_disp8,op_none>                   ; E1
