@@ -3,4 +3,5 @@
 ### Semester 1
 * ```ca/``` - Computer architecture <br>
 * ```pp/``` - Procedural programming <br>
-* ```pi/``` - Practical informatics
+* ```pi/``` - Practical informatics <br>
+* ```en/``` - English
