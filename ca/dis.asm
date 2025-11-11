@@ -1,10 +1,12 @@
 
     ;
-    ; A disassembler for 8086 assembly .COM files:
+    ; A disassembler for 8086 assembly .COM and .EXE files:
     ; used dosbox, tasm and tlink.
     ;
     ; Usage:
     ; dis.exe input.com output.asm
+    ;
+    ; Written by Aringas Civilka at https://github.com/aringq10
     ;
 
 .model small
@@ -17,54 +19,54 @@
     fd_out dw ?
     buff db 512 dup(?)
     buff_size dw 512
-    bytes_rem dw 0
+    bytes_rem dw ?
     eof dw 0
 
     ; Command characteristics
-    cmd_len db 0
-    first_byte db 0
-    sec_byte db 0
-    md db 0
-    reg db 0
-    tmp_reg db 0
-    rm db 0
-    cmd_disp_len db 0
-    cmd_disp_b db 0, 0
+    cmd_len db ?
+    opc_byte db ?
+    addr_byte db ?
+    md db ?
+    reg db ?
+    tmp_reg db ?
+    rm db ?
+    cmd_disp_len db ?
+    cmd_disp_b db ?, ?
     cmd_disp_hex db 6 dup(?)
 
     ; Current command
-    cc_addr dw 0
-    cc_type db 0
-    cc_op_1 db 0
-    cc_op_2 db 0
-    tmp_op  db 0
+    cc_addr dw ?
+    cc_type db ?
+    cc_op_1 db ?
+    cc_op_2 db ?
+    tmp_op  db ?
     ; Address byte already parsed flag
-    addr_b_parsed_f db 0
+    addr_b_parsed_f db ?
 
-    main_loop_si dw 0 ; address of current command in buff_in
-    imm_offset dw 0   ; offset from main_loop_si
-                      ; for non_addr_byte operands
+    main_loop_si dw ? ; Address of current command in buff_in
+    imm_offset dw ?   ; Offset from main_loop_si for
+                      ; non_addr_byte operands to read from
 
     op_struct struc
-        cn_ptr      dw 0
-        cmd_type    db 0
-        op_1_code   db 0
-        op_2_code   db 0
+        cn_ptr      dw ?
+        cmd_type    db ?
+        op_1_code   db ?
+        op_2_code   db ?
     ends
 
     include opcodes.inc
 
     ; Stuff for formatting output
-    disp_address dw 0
+    disp_address dw ?
     cmd_address dw 100h
-    cmd_name dw 0
-    cmd_name_len dw 0
+    cmd_name dw ?
+    cmd_name_len dw ?
 
     cmd_address_padding dw 8
     cmd_hex_padding dw 22
     cmd_name_padding dw 8
     
-    seg_ov dw 0
+    seg_ov dw ?
     seg_ov_string db "ES:$"
                   db "CS:$"
                   db "SS:$"
@@ -107,14 +109,9 @@
                  db "BX$"
 
     output_line db 255 dup (?)
-    output_line_len dw 0
+    output_line_len dw ?
     
     hex_string db "0123456789ABCDEF"
-
-    ; Strings for printing
-    header db "Address|Command   Hex   Value|Command|Operands", 0ah
-           db "----------------------------------------------", 0ah
-    header_len dw 94
 
     err_msg db "Invalid input$"
     usage_msg db "Usage: dis.exe input.com output.asm", 0dh, 0ah
@@ -146,98 +143,48 @@ start:
     mov ax, @data
     mov ds, ax
     
-    ; get 2 args from cli
     call get_2_args
 
-    ; open file 'fn_in' for reading
-    mov ax, 3d00h
-    mov dx, offset fn_in
-    int 21h
-    mov fd_in, ax
-    jc file_err
-    
-    ; create output file
-    mov ax, 3c00h
-    xor cx, cx
-    mov dx, offset fn_out
-    int 21h
-    mov fd_out, ax
-    jc file_err
+    call open_files
 
     call main_loop
 
-    ; close both files
-    mov ax, 3e00h
-    mov bx, fd_out
-    int 21h
-    mov ax, 3e00h
-    mov bx, fd_in
-    int 21h
+    call close_files
 
-    terminate
-
-; INFO/ERR PRINTING
-file_err:
-    print_string file_err_msg
-    mov bl, al
-    call byte_to_hex
-    print_char bh
-    print_char bl
-    print_char 'h'
     terminate
 
 ; MAIN LOOP
 main_loop proc
-    ; Print header
-    mov cx, header_len
-    mov ax, 4000h
-    mov bx, fd_out
-    mov dx, offset header
-    int 21h
-    jc file_err
+    call check_for_exe
+    call initial_read
 
-    ; read first buff_size bytes
-    mov cx, buff_size
-    mov dx, offset buff
-    mov ax, 3f00h
-    mov bx, fd_in
-    int 21h
-    jc file_err
-
-    mov cx, ax
     mov si, offset buff
+    mov cx, ax
     cmp cx, 0
     jne .command_parse_loop
     ret
 
     .command_parse_loop:
-        ; RESET CMD STATS
         call reset_cmd_stats
         mov main_loop_si, si
 
-        ; LOAD TWO BYTES
         mov al, [si]
-        mov first_byte, al
+        mov opc_byte, al
         mov al, [si + 1]
-        mov sec_byte, al
+        mov addr_byte, al
 
-        ; PARSE COMMAND AND
-        ; FORM OPERANDS
         call decode_opc
-        call form_operands
+        call form_operand_strings
+        call format_output_line
 
-        ; UPDATE CX, SI AND
-        ; FORMAT OUTPUT
-        call format_output
+        ; Update cx, si and cmd_address using cmd_len
         xor ah, ah
         mov al, cmd_len
         sub cx, ax
         add si, ax
         add cmd_address, ax
        
-        ; WRITE TO FILE
         call write_line_to_file 
-        jc file_err
 
         ; Read more bytes to fill buffer in case
         ; there are less than 8 bytes left.
@@ -266,7 +213,7 @@ decode_opc proc
     call check_seg_ov
 
     mov ax, size op_struct
-    mov bl, first_byte
+    mov bl, opc_byte
     mul bl
 
     lea bx, opcodes
@@ -278,7 +225,7 @@ decode_opc proc
     jne .skip_ext_opc
     ; In case of extended opcode
     mov ax, 2
-    mov dl, sec_byte
+    mov dl, addr_byte
     shr dl, 3
     and dl, 7
     mul dl
@@ -307,13 +254,13 @@ decode_opc proc
     
     ; implement f6_f7 TEST command, since it has
     ; different layout than other f6_f7 commands
-    cmp first_byte, 0F6h
+    cmp opc_byte, 0F6h
     jne .skip_f6_impl
     call implement_test_f6_f7
     jmp .skip_f7_impl
 
     .skip_f6_impl:
-    cmp first_byte, 0F7h
+    cmp opc_byte, 0F7h
     jne .skip_f7_impl
     call implement_test_f6_f7
 
@@ -331,18 +278,18 @@ parse_addr_byte proc
 
     inc cmd_len
     ; store mod (md)
-    mov al, sec_byte
+    mov al, addr_byte
     shr al, 6
     mov md, al
 
     ; store reg
-    mov al, sec_byte
+    mov al, addr_byte
     shr al, 3
     and al, 7
     mov reg, al
 
     ; store r/m (rm)
-    mov al, sec_byte
+    mov al, addr_byte
     and al, 7
     mov rm, al
 
@@ -409,7 +356,7 @@ parse_addr_byte proc
 parse_addr_byte endp
 
 ; FORMATTING OPERANDS
-form_operands proc
+form_operand_strings proc
     push si
     push cx
 
@@ -423,40 +370,34 @@ form_operands proc
     mov tmp_op, al
     call form_op
 
-    cmp byte ptr [op_1], '$'
-    je .end_forming_ops
-
     mov di, offset op_2
     mov al, cc_op_2
     mov tmp_op, al
     call form_op
 
     .end_forming_ops:
-    pop cx
-    pop si
-    ret
-form_operands endp
+        pop cx
+        pop si
+        ret
+form_operand_strings endp
 
 form_op proc
     ; op_none
     cmp tmp_op, op_none
     jne .skip_op_none
-    mov byte ptr [di], '$'
-    ret
+    jmp .end_forming_op
     .skip_op_none:
     ; predefined op
     cmp tmp_op, 30
     jnb .skip_op_predef
     call op_predef
-    mov byte ptr [di], '$'
-    ret
+    jmp .end_forming_op
     .skip_op_predef:
     ; op requires address byte
     cmp tmp_op, 40
     jnb .skip_op_addr_byte
     call op_addr_byte
-    mov byte ptr [di], '$'
-    ret
+    jmp .end_forming_op
     .skip_op_addr_byte:
     ; no address byte required
     cmp tmp_op, 50
@@ -714,21 +655,10 @@ op_from_daddress proc
     mov byte ptr [di], '['
     inc di
 
-    mov bl, [si + 1]
-    call byte_to_hex
-    mov [di], bh
-    mov [di + 1], bl
-    add di, 2
+    call op_from_imm16
 
-    mov bl, [si]
-    call byte_to_hex
-    mov [di], bh
-    mov [di + 1], bl
-    add di, 2
-    
-    mov byte ptr [di], 'h'
-    mov byte ptr [di + 1], ']'
-    add di, 2
+    mov byte ptr [di], ']'
+    inc di
     ret
 op_from_daddress endp
 
@@ -904,7 +834,7 @@ format_op_2 proc
     ret
 format_op_2 endp
 
-format_output proc
+format_output_line proc
     push cx
     push si
     mov di, offset output_line
@@ -920,9 +850,6 @@ format_output proc
     call format_op_2
 
     .end_format:
-    ; *Uncomment if viewing output.asm on a non-Unix machine
-    ; mov byte ptr [di], 0dh
-    ; inc di
     mov byte ptr [di], 0ah
     inc di
 
@@ -933,7 +860,7 @@ format_output proc
     pop si
     pop cx
     ret
-format_output endp
+format_output_line endp
 
 ; HELPERS
 write_line_to_file proc
@@ -943,8 +870,13 @@ write_line_to_file proc
     mov bx, fd_out
     mov dx, offset output_line
     int 21h
+    jc .file_err_write
+
     pop cx
     ret
+
+    .file_err_write:
+        call print_file_err
 write_line_to_file endp
 
 update_buffer proc
@@ -969,7 +901,7 @@ update_buffer proc
     mov ax, 3f00h
     mov bx, fd_in
     int 21h
-    jc file_err_2
+    jc .file_err_updating_buffer
 
     mov cx, ax
     cmp cx, 0
@@ -980,14 +912,8 @@ update_buffer proc
 
     ret
 
-    file_err_2:
-        print_string file_err_msg
-        mov bl, al
-        call byte_to_hex
-        print_char bh
-        print_char bl
-        print_char 'h'
-        terminate
+    .file_err_updating_buffer:
+        call print_file_err
 update_buffer endp
 
 get_2_args proc
@@ -999,9 +925,9 @@ get_2_args proc
     mov di, offset fn_in
     call get_arg
     cmp bx, 0
-    je .print_err
+    je .print_invalid_input
     cmp bx, 12
-    jg .print_err
+    jg .print_invalid_input
     ; check for /?
     cmp bx, 2
     jne .continue_to_sec_arg
@@ -1015,13 +941,13 @@ get_2_args proc
     mov di, offset fn_out
     call get_arg
     cmp bx, 0
-    je .print_err
+    je .print_invalid_input
     cmp bx, 12
-    jg .print_err
+    jg .print_invalid_input
 
     ret
 
-    .print_err:
+    .print_invalid_input:
         print_string err_msg
         print_string newl
         print_string usage_msg
@@ -1100,10 +1026,11 @@ byte_to_hex proc
     ; take byte in bl, output higher 4 bit's
     ; hex value in bh and the lower 4 bit's in bl
     ; *uses hex_string
+
     push dx
     mov bh, bl
     shr bh, 4
-    and bl, 15
+    and bl, 1111b
     push bx
     xor bh, bh
 
@@ -1118,8 +1045,10 @@ byte_to_hex proc
 byte_to_hex endp
 
 check_seg_ov proc
+    ; Store offset in seg_ov for seg_ov_string
     mov seg_ov, offset seg_ov_string
-    mov dh, first_byte
+
+    mov dh, opc_byte
     cmp dh, 26h
     je .seg_ov26h
     cmp dh, 2Eh
@@ -1145,10 +1074,10 @@ check_seg_ov proc
         
     .end_seg_ov:
         inc cmd_len
-        mov al, sec_byte
-        mov first_byte, al
+        mov al, addr_byte
+        mov opc_byte, al
         mov al, [si + 2]
-        mov sec_byte, al
+        mov addr_byte, al
         inc main_loop_si
         ret
 check_seg_ov endp
@@ -1177,19 +1106,121 @@ print_padding proc
 print_padding endp
 
 implement_test_f6_f7 proc
-    mov dh, sec_byte
+    mov dh, addr_byte
     shr dh, 3
     and dh, 7
     cmp dh, 0
     jne .skip_impl
-    cmp first_byte, 0F6h
+    cmp opc_byte, 0F6h
     jne .f7h
     mov cc_op_2, op_imm8
-    jmp .skip_impl
+    ret
+
     .f7h:
         mov cc_op_2, op_imm16
     .skip_impl:
-    ret
+        ret
 implement_test_f6_f7 endp
+
+open_files proc
+    ; open input file
+    mov ax, 3d00h
+    mov dx, offset fn_in
+    int 21h
+    mov fd_in, ax
+    jc .file_err_open
+    
+    ; create output file
+    mov ax, 3c00h
+    xor cx, cx
+    mov dx, offset fn_out
+    int 21h
+    mov fd_out, ax
+    jc .file_err_open
+
+    ret
+
+    .file_err_open:
+        call print_file_err
+open_files endp
+
+close_files proc
+    ; close both files
+    mov ax, 3e00h
+    mov bx, fd_out
+    int 21h
+    jc .file_err_close
+    mov ax, 3e00h
+    mov bx, fd_in
+    int 21h
+    jc .file_err_close
+
+    ret
+
+    .file_err_close:
+        call print_file_err
+close_files endp
+
+initial_read proc
+    ; read first chunk of bytes of size 'buff_size'
+    mov cx, buff_size
+    mov dx, offset buff
+    mov ax, 3f00h
+    mov bx, fd_in
+    int 21h
+    jc .file_err_initial_read
+    
+    ret
+
+    .file_err_initial_read:
+        call print_file_err
+initial_read endp
+
+print_file_err proc
+    print_string file_err_msg
+    mov bl, al
+    call byte_to_hex
+    print_char bh
+    print_char bl
+    print_char 'h'
+
+    terminate
+print_file_err endp
+
+check_for_exe proc
+    ; Checks for .exe signature bytes 'MZ' and skips
+    ; the amount of bytes that the header takes up
+    ; by updating the file read pointer of fd_in
+    call initial_read
+
+    mov si, offset buff
+    cmp word ptr [si], 5A4Dh ; MZ header signature
+    jne .end_check_for_exe
+
+    mov dx, [si + 08h]
+    mov cx, dx
+    shl dx, 4
+    rcl cx, 4
+    and cx, 1111b
+
+    mov ax, 4200h
+    mov bx, fd_in
+    int 21h
+    jc .file_err_check_exe
+    mov cmd_address, 0
+    ret
+
+    .end_check_for_exe:
+        mov ax, 4200h
+        mov bx, fd_in
+        xor cx, cx
+        xor dx, dx
+        int 21h
+        jc .file_err_check_exe
+        ret
+
+    .file_err_check_exe:
+        call print_file_err
+check_for_exe endp
 
 end start

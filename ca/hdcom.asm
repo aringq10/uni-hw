@@ -62,6 +62,8 @@ continue:
     mov ax, 3d00h
     mov dx, offset fn_in
     int 21h
+    mov al, '0'
+    mov [hex_string], al
     mov fd_in, ax
     jc file_err
     
@@ -230,12 +232,12 @@ get_arg endp
 
     fn_in db 255 dup(0)
     fn_out db 255 dup(0)
-    fd_in dw ?
-    fd_out dw ?
     buff_in db 512 dup(?)
     buff_out db 1728 dup(?)     ; (512 * 3) + ((512 * 3) / 16) * 2
                                 ; One byte is chars [0; f] + space and
                                 ; each line of (16) bytes in hex requires 2 bytes for \n
+    fd_in dw ?
+    fd_out dw ?
     hex_string db "0123456789abcdef$"
     err_msg db "Invalid input$"
     usage_msg db "Usage: dasm.exe input.exe output.asm", 0dh, 0ah

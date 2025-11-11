@@ -417,7 +417,7 @@ label opcodes
     op_struct<cn_in,t_normal,op_ax,op_imm8>                         ; E5
     op_struct<cn_out,t_normal,op_imm8,op_al>                        ; E6
     op_struct<cn_out,t_normal,op_imm8,op_ax>                        ; E7
-    op_struct<cn_call,t_normal,op_daddr,op_none>                    ; E8
+    op_struct<cn_call,t_normal,op_disp16,op_none>                   ; E8
     op_struct<cn_jmp,t_normal,op_disp16,op_none>                    ; E9
     op_struct<cn_jmp,t_normal,op_faddr,op_none>                     ; EA
     op_struct<cn_jmp,t_normal,op_disp8,op_none>                     ; EB
