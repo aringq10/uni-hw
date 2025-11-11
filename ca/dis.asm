@@ -6,7 +6,8 @@
     ; Usage:
     ; dis.exe input.com output.asm
     ;
-    ; Written by Aringas Civilka at https://github.com/aringq10
+    ; Written by Aringas Civilka, Vilnius university MIF 2025
+    ; https://github.com/aringq10
     ;
 
 .model small
@@ -64,7 +65,7 @@
 
     cmd_address_padding dw 8
     cmd_hex_padding dw 22
-    cmd_name_padding dw 8
+    cmd_name_padding dw 10
     
     seg_ov dw ?
     seg_ov_string db "ES:$"
