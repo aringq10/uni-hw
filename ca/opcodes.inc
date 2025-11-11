@@ -47,125 +47,121 @@
     t_unsupp    equ 51
     t_normal    equ 52
     t_ext_opc   equ 53
-    t_2byte     equ 54
+    t_seg_ov    equ 54
+    t_2byte     equ 55
 
 ; COMMAND NAMES
-    cn_unk    db "UNK$"
-    cn_unsupp db "UNSUPPORTED$"
-    cn_aaa    db "AAA$"
-    cn_aad    db "AAD$"
-    cn_aam    db "AAM$"
-    cn_aas    db "AAS$"
-    cn_adc    db "ADC$"
-    cn_add    db "ADD$"
-    cn_and    db "AND$"
-    cn_call   db "CALL$"
-    cn_callf  db "CALLF$"
-    cn_cbw    db "CBW$"
-    cn_clc    db "CLC$"
-    cn_cld    db "CLD$"
-    cn_cli    db "CLI$"
-    cn_cmc    db "CMC$"
-    cn_cmp    db "CMP$"
-    cn_cmpsb  db "CMPSB$"
-    cn_cmpsw  db "CMPSW$"
-    cn_cwd    db "CWD$"
-    cn_daa    db "DAA$"
-    cn_das    db "DAS$"
-    cn_dec    db "DEC$"
-    cn_div    db "DIV$"
-    cn_esc0   db "ESC0$"
-    cn_esc1   db "ESC1$"
-    cn_esc2   db "ESC2$"
-    cn_esc3   db "ESC3$"
-    cn_esc4   db "ESC4$"
-    cn_esc5   db "ESC5$"
-    cn_esc6   db "ESC6$"
-    cn_esc7   db "ESC7$"
-    cn_hlt    db "HLT$"
-    cn_idiv   db "IDIV$"
-    cn_imul   db "IMUL$"
-    cn_in     db "IN$"
-    cn_inc    db "INC$"
-    cn_int    db "INT$"
-    cn_into   db "INTO$"
-    cn_iret   db "IRET$"
-    cn_ja     db "JA$"
-    cn_jae    db "JAE$"
-    cn_jb     db "JB$"
-    cn_jbe    db "JBE$"
-    cn_jcxz   db "JCXZ$"
-    cn_jg     db "JG$"
-    cn_jge    db "JGE$"
-    cn_jl     db "JL$"
-    cn_jle    db "JLE$"
-    cn_jmp    db "JMP$"
-    cn_jmpf   db "JMPF$"
-    cn_jno    db "JNO$"
-    cn_jns    db "JNS$"
-    cn_jnz    db "JNZ$"
-    cn_jo     db "JO$"
-    cn_jpe    db "JPE$"
-    cn_jpo    db "JPO$"
-    cn_js     db "JS$"
-    cn_jz     db "JZ$"
-    cn_lahf   db "LAHF$"
-    cn_lds    db "LDS$"
-    cn_lea    db "LEA$"
-    cn_les    db "LES$"
-    cn_lock   db "LOCK$"
-    cn_lodsb  db "LODSB$"
-    cn_lodsw  db "LODSW$"
-    cn_loop   db "LOOP$"
-    cn_loopnz db "LOOPNZ$"
-    cn_loopz  db "LOOPZ$"
-    cn_mov    db "MOV$"
-    cn_movsb  db "MOVSB$"
-    cn_movsw  db "MOVSW$"
-    cn_mul    db "MUL$"
-    cn_neg    db "NEG$"
-    cn_nop    db "NOP$"
-    cn_not    db "NOT$"
-    cn_or     db "OR$"
-    cn_out    db "OUT$"
-    cn_pop    db "POP$"
-    cn_popf   db "POPF$"
-    cn_push   db "PUSH$"
-    cn_pushf  db "PUSHF$"
-    cn_rcl    db "RCL$"
-    cn_rcr    db "RCR$"
-    cn_rep    db "REP$"
-    cn_repne  db "REPNE$"
-    cn_ret    db "RET$"
-    cn_retf   db "RETF$"
-    cn_retn   db "RETN$"
-    cn_repz   db "REPZ$"
-    cn_rol    db "ROL$"
-    cn_ror    db "ROR$"
-    cn_sahf   db "SAHF$"
-    cn_sal    db "SAL$"
-    cn_sar    db "SAR$"
-    cn_sbb    db "SBB$"
-    cn_scasb  db "SCASB$"
-    cn_scasw  db "SCASW$"
-    cn_segcs  db "SEGCS$"
-    cn_segds  db "SEGDS$"
-    cn_seges  db "SEGES$"
-    cn_segss  db "SEGSS$"
-    cn_shl    db "SHL$"
-    cn_shr    db "SHR$"
-    cn_stc    db "STC$"
-    cn_std    db "STD$"
-    cn_sti    db "STI$"
-    cn_stos   db "STOS$" 
-    cn_stosb  db "STOSB$"
-    cn_stosw  db "STOSW$"
-    cn_sub    db "SUB$"
-    cn_test   db "TEST$"
-    cn_wait   db "WAIT$"
-    cn_xchg   db "XCHG$"
-    cn_xlat   db "XLAT$"
-    cn_xor    db "XOR$"
+    cn_es_ov     db "ES:$"
+    cn_cs_ov     db "CS:$"
+    cn_ss_ov     db "SS:$"
+    cn_ds_ov     db "DS:$"
+    cn_unk       db "UNK$"
+    cn_unsupp    db "UNSUPPORTED$"
+    cn_aaa       db "AAA$"
+    cn_aad       db "AAD$"
+    cn_aam       db "AAM$"
+    cn_aas       db "AAS$"
+    cn_adc       db "ADC$"
+    cn_add       db "ADD$"
+    cn_and       db "AND$"
+    cn_call      db "CALL$"
+    cn_cbw       db "CBW$"
+    cn_clc       db "CLC$"
+    cn_cld       db "CLD$"
+    cn_cli       db "CLI$"
+    cn_cmc       db "CMC$"
+    cn_cmp       db "CMP$"
+    cn_cmpsb     db "CMPSB$"
+    cn_cmpsw     db "CMPSW$"
+    cn_cwd       db "CWD$"
+    cn_daa       db "DAA$"
+    cn_das       db "DAS$"
+    cn_dec       db "DEC$"
+    cn_div       db "DIV$"
+    cn_esc0      db "ESC0$"
+    cn_esc1      db "ESC1$"
+    cn_esc2      db "ESC2$"
+    cn_esc3      db "ESC3$"
+    cn_esc4      db "ESC4$"
+    cn_esc5      db "ESC5$"
+    cn_esc6      db "ESC6$"
+    cn_esc7      db "ESC7$"
+    cn_hlt       db "HLT$"
+    cn_idiv      db "IDIV$"
+    cn_imul      db "IMUL$"
+    cn_in        db "IN$"
+    cn_inc       db "INC$"
+    cn_int       db "INT$"
+    cn_into      db "INTO$"
+    cn_iret      db "IRET$"
+    cn_lahf      db "LAHF$"
+    cn_jmp       db "JMP$"
+    cn_jcxz      db "JCXZ$"
+    cn_ja        db "JA$"
+    cn_jae_jnc   db "JAE/JNC$"
+    cn_jb_jc     db "JB/JC$"
+    cn_jbe       db "JBE$"
+    cn_je_jz     db "JE/JZ$"
+    cn_jg        db "JG$"
+    cn_jge       db "JGE$"
+    cn_jl        db "JL$"
+    cn_jle       db "JLE$"
+    cn_jne_jnz   db "JNE/JNZ$"
+    cn_jno       db "JNO$"
+    cn_jnp_jpo   db "JNP/JPO$"
+    cn_jp_jpe    db "JP/JPE$"
+    cn_jo        db "JO$"
+    cn_jns       db "JNS$"
+    cn_js        db "JS$"
+    cn_lds       db "LDS$"
+    cn_lea       db "LEA$"
+    cn_les       db "LES$"
+    cn_lock      db "LOCK$"
+    cn_lodsb     db "LODSB$"
+    cn_lodsw     db "LODSW$"
+    cn_loop      db "LOOP$"
+    cn_loopne_nz db "LOOPNE/NZ$"
+    cn_loope_z   db "LOOPE/Z$"
+    cn_mov       db "MOV$"
+    cn_movsb     db "MOVSB$"
+    cn_movsw     db "MOVSW$"
+    cn_mul       db "MUL$"
+    cn_neg       db "NEG$"
+    cn_not       db "NOT$"
+    cn_or        db "OR$"
+    cn_out       db "OUT$"
+    cn_pop       db "POP$"
+    cn_popf      db "POPF$"
+    cn_push      db "PUSH$"
+    cn_pushf     db "PUSHF$"
+    cn_rcl       db "RCL$"
+    cn_rcr       db "RCR$"
+    cn_rep_z_e   db "REP/Z/E$"
+    cn_repnz_ne  db "REPNZ/NE$"
+    cn_ret       db "RET$"
+    cn_retf      db "RETF$"
+    cn_retn      db "RETN$"
+    cn_rol       db "ROL$"
+    cn_ror       db "ROR$"
+    cn_sahf      db "SAHF$"
+    cn_sar       db "SAR$"
+    cn_sbb       db "SBB$"
+    cn_scasb     db "SCASB$"
+    cn_scasw     db "SCASW$"
+    cn_shl_sal   db "SHL$"
+    cn_shr       db "SHR$"
+    cn_stc       db "STC$"
+    cn_std       db "STD$"
+    cn_sti       db "STI$"
+    cn_stos      db "STOS$" 
+    cn_stosb     db "STOSB$"
+    cn_stosw     db "STOSW$"
+    cn_sub       db "SUB$"
+    cn_test      db "TEST$"
+    cn_wait      db "WAIT$"
+    cn_xchg      db "XCHG$"
+    cn_xlat      db "XLAT$"
+    cn_xor       db "XOR$"
 
 
 
@@ -211,7 +207,7 @@ label opcodes
     op_struct<cn_and,t_normal,op_reg16,op_regmem16>                 ; 23
     op_struct<cn_and,t_normal,op_al,op_imm8>                        ; 24
     op_struct<cn_and,t_normal,op_ax,op_imm16>                       ; 25
-    op_struct<cn_unsupp,t_unsupp,op_none,op_none>                   ; 26 seg_ov ES
+    op_struct<cn_es_ov,t_seg_ov,op_none,op_none>                    ; 26 seg_ov ES
     op_struct<cn_daa,t_normal,op_none,op_none>                      ; 27
     op_struct<cn_sub,t_normal,op_regmem8,op_reg8>                   ; 28
     op_struct<cn_sub,t_normal,op_regmem16,op_reg16>                 ; 29
@@ -219,7 +215,7 @@ label opcodes
     op_struct<cn_sub,t_normal,op_reg16,op_regmem16>                 ; 2B
     op_struct<cn_sub,t_normal,op_al,op_imm8>                        ; 2C
     op_struct<cn_sub,t_normal,op_ax,op_imm16>                       ; 2D
-    op_struct<cn_unsupp,t_unsupp,op_none,op_none>                   ; 26 seg_ov CS
+    op_struct<cn_cs_ov,t_seg_ov,op_none,op_none>                    ; 2E seg_ov CS
     op_struct<cn_das,t_normal,op_none,op_none>                      ; 2F
 
     op_struct<cn_xor,t_normal,op_regmem8,op_reg8>                   ; 30
@@ -228,7 +224,7 @@ label opcodes
     op_struct<cn_xor,t_normal,op_reg16,op_regmem16>                 ; 33
     op_struct<cn_xor,t_normal,op_al,op_imm8>                        ; 34
     op_struct<cn_xor,t_normal,op_ax,op_imm16>                       ; 35
-    op_struct<cn_unsupp,t_unsupp,op_none,op_none>                   ; 26 seg_ov SS
+    op_struct<cn_ss_ov,t_seg_ov,op_none,op_none>                    ; 36 seg_ov SS
     op_struct<cn_aaa,t_normal,op_none,op_none>                      ; 37
     op_struct<cn_cmp,t_normal,op_regmem8,op_reg8>                   ; 38
     op_struct<cn_cmp,t_normal,op_regmem16,op_reg16>                 ; 39
@@ -236,7 +232,7 @@ label opcodes
     op_struct<cn_cmp,t_normal,op_reg16,op_regmem16>                 ; 3B
     op_struct<cn_cmp,t_normal,op_al,op_imm8>                        ; 3C
     op_struct<cn_cmp,t_normal,op_ax,op_imm16>                       ; 3D
-    op_struct<cn_unsupp,t_unsupp,op_none,op_none>                   ; 26 seg_ov DS
+    op_struct<cn_ds_ov,t_seg_ov,op_none,op_none>                    ; 3E seg_ov DS
     op_struct<cn_aas,t_normal,op_none,op_none>                      ; 3F
 
     op_struct<cn_inc,t_normal,op_ax,op_none>                        ; 40
@@ -273,7 +269,7 @@ label opcodes
     op_struct<cn_pop,t_normal,op_si,op_none>                        ; 5E
     op_struct<cn_pop,t_normal,op_di,op_none>                        ; 5F
 
-    op_struct<cn_unsupp,t_unsupp,op_none,op_none>                   ; 60
+    op_struct<cn_unsupp,t_unsupp,op_none,op_none>                   ; 60 60-6F not used
     op_struct<cn_unsupp,t_unsupp,op_none,op_none>                   ; 61
     op_struct<cn_unsupp,t_unsupp,op_none,op_none>                   ; 62
     op_struct<cn_unsupp,t_unsupp,op_none,op_none>                   ; 63
@@ -292,16 +288,16 @@ label opcodes
 
     op_struct<cn_jo,t_normal,op_disp8,op_none>                      ; 70
     op_struct<cn_jno,t_normal,op_disp8,op_none>                     ; 71
-    op_struct<cn_jb,t_normal,op_disp8,op_none>                      ; 72
-    op_struct<cn_jae,t_normal,op_disp8,op_none>                     ; 73
-    op_struct<cn_jz,t_normal,op_disp8,op_none>                      ; 74
-    op_struct<cn_jnz,t_normal,op_disp8,op_none>                     ; 75
+    op_struct<cn_jb_jc,t_normal,op_disp8,op_none>                      ; 72
+    op_struct<cn_jae_jnc,t_normal,op_disp8,op_none>                 ; 73
+    op_struct<cn_je_jz,t_normal,op_disp8,op_none>                   ; 74
+    op_struct<cn_jne_jnz,t_normal,op_disp8,op_none>                 ; 75
     op_struct<cn_jbe,t_normal,op_disp8,op_none>                     ; 76
     op_struct<cn_ja,t_normal,op_disp8,op_none>                      ; 77
     op_struct<cn_js,t_normal,op_disp8,op_none>                      ; 78
     op_struct<cn_jns,t_normal,op_disp8,op_none>                     ; 79
-    op_struct<cn_jpe,t_normal,op_disp8,op_none>                     ; 7A
-    op_struct<cn_jpo,t_normal,op_disp8,op_none>                     ; 7B
+    op_struct<cn_jp_jpe,t_normal,op_disp8,op_none>                  ; 7A
+    op_struct<cn_jnp_jpo,t_normal,op_disp8,op_none>                 ; 7B
     op_struct<cn_jl,t_normal,op_disp8,op_none>                      ; 7C
     op_struct<cn_jge,t_normal,op_disp8,op_none>                     ; 7D
     op_struct<cn_jle,t_normal,op_disp8,op_none>                     ; 7E
@@ -409,8 +405,8 @@ label opcodes
     op_struct<cn_esc6,t_normal,op_regmem8,op_none>                  ; DE
     op_struct<cn_esc7,t_normal,op_regmem8,op_none>                  ; DF
 
-    op_struct<cn_loopnz,t_normal,op_disp8,op_none>                  ; E0
-    op_struct<cn_loopz,t_normal,op_disp8,op_none>                   ; E1
+    op_struct<cn_loopne_nz,t_normal,op_disp8,op_none>                  ; E0
+    op_struct<cn_loope_z,t_normal,op_disp8,op_none>                   ; E1
     op_struct<cn_loop,t_normal,op_disp8,op_none>                    ; E2
     op_struct<cn_jcxz,t_normal,op_disp8,op_none>                    ; E3
     op_struct<cn_in,t_normal,op_al,op_imm8>                         ; E4
@@ -428,8 +424,8 @@ label opcodes
 
     op_struct<cn_lock,t_normal,op_none,op_none>                     ; F0
     op_struct<cn_unsupp,t_unsupp,op_none,op_none>                   ; F1 - not used
-    op_struct<cn_repne,t_normal,op_none,op_none>                    ; F2
-    op_struct<cn_rep,t_normal,op_none,op_none>                      ; F3
+    op_struct<cn_repnz_ne,t_normal,op_none,op_none>                 ; F2
+    op_struct<cn_rep_z_e,t_normal,op_none,op_none>                  ; F3
     op_struct<cn_hlt,t_normal,op_none,op_none>                      ; F4
     op_struct<cn_cmc,t_normal,op_none,op_none>                      ; F5
     op_struct<ext_opc_f6_f7,t_ext_opc,op_regmem8,op_none>           ; F6 ext_opc_f6_f7
@@ -445,42 +441,42 @@ label opcodes
 
 ; Extended opcode segments
 label ext_opc_80_83
-    dw cn_add     ; ADD2 000
-    dw cn_or      ; OR2  001
-    dw cn_adc     ; ADC2 010
-    dw cn_sbb     ; SBB2 011
-    dw cn_and     ; AND2 100
-    dw cn_sub     ; SUB2 101
-    dw cn_xor     ; XOR2 110
-    dw cn_cmp     ; CMP2 111
+    dw cn_add
+    dw cn_or
+    dw cn_adc
+    dw cn_sbb
+    dw cn_and
+    dw cn_sub
+    dw cn_xor
+    dw cn_cmp
 
 label ext_opc_d0_d3
-    dw cn_rol     ; ROL 000
-    dw cn_ror     ; ROR 001
-    dw cn_rcl     ; RCL 010
-    dw cn_rcr     ; RCR 011
-    dw cn_shl     ; SHL 100
-    dw cn_shr     ; SHR 101
-    dw cn_unsupp  ; - not used
-    dw cn_sar     ; SAR 111
+    dw cn_rol
+    dw cn_ror
+    dw cn_rcl
+    dw cn_rcr
+    dw cn_shl_sal
+    dw cn_shr
+    dw cn_unsupp
+    dw cn_sar
 
 
 label ext_opc_f6_f7
-    dw cn_test    ; TEST2 000 - implement separately (op_regmem, op_imm)
-    dw cn_unsupp  ; - not used
-    dw cn_not     ; NOT   010
-    dw cn_neg     ; NEG   011
-    dw cn_mul     ; MUL   100
-    dw cn_imul    ; IMUL  101
-    dw cn_div     ; DIV   110
-    dw cn_idiv    ; IDIV  111
+    dw cn_test    ; TEST - implement separately (op_regmem, op_imm)
+    dw cn_unsupp
+    dw cn_not
+    dw cn_neg
+    dw cn_mul
+    dw cn_imul
+    dw cn_div
+    dw cn_idiv
 
 label ext_opc_fe_ff
-    dw cn_inc     ; INC1  000
-    dw cn_dec     ; DEC1  001
-    dw cn_call    ; CALL2 010
-    dw cn_call    ; CALL4 011
-    dw cn_jmp     ; JMP3  100
-    dw cn_jmp     ; JMP5  101
-    dw cn_push    ; PUSH1 110
-    dw cn_unsupp  ; - not used
+    dw cn_inc
+    dw cn_dec
+    dw cn_call
+    dw cn_call
+    dw cn_jmp
+    dw cn_jmp
+    dw cn_push
+    dw cn_unsupp
