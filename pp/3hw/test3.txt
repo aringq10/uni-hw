@@ -1,0 +1,3 @@
+Level leVeL LEVEL
+palindrome? no maybe
+RaceCar rotor ROTor

@@ -1,117 +1,69 @@
+/*
+    Code written by Aringas Civilka 2025
+    for a procedural programming class in
+    Vilnius University.
+
+    Assignment:
+    Parašyti funkciją, kuri iš duoto teksto išmeta
+    žodžius, vienodai skaitomus iš pradžios ir iš
+    galo (tarpų skaičius turi likti nepakitęs).
+*/
+
+// TODO
+// optimize writing to padding to file(store in padding buffer and then write)
+// if first arg skipped, take input from stdin
+// if second arg skipped, print to stdout
+
 // Guess how much it will take - 1.5h
 // 2025-11-22
 // Planning - 10:05-10:35
 // Code 10:45 - 11:48
 // Testing 11:52 - 12:20
-// Finishing up 12:20 - 12:33
+// Finishing up 12:20 - 12:35
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
 
-const unsigned int readBufferSize = 2; // Has to be larger than 1
 const unsigned int wordLengthLimit = 100;
+const unsigned int readBufferSize = 2; // Has to be larger than 1
+                                       // or program will run forever
 char *programName;
+
+const char infoMsg[] = 
+    "-------------------------------------------------------------------\n"
+    "This program removes all palindrome words from the given input file\n"
+    "and outputs the new text into the output file. Words get skipped\n"
+    "if they go over the word length limit specified at the top of the\n"
+    "source code file.\n"
+    "-------------------------------------------------------------------\n";
 
 void printUsage() {
     printf(
         "Usage: %s inputFile outputFile\n"
-        "*give the -h or --help flag after the program name for more details\n"
-        , programName
+        "Try %s -h or %s --help for more details\n"
+        , programName, programName, programName
     );
 }
 
-bool isPalindrome(char *word, int n) {
-    for (int l = 0, r = n - 1; r - l >= 1; l++, r--) {
-        if (word[l] != word[r]) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-void removePalindromes(FILE *inputF, FILE *outputF) {
-    char buf[readBufferSize];
-    char word[wordLengthLimit];
-    int wordLen = 0;
-    bool notWord = true;
-    bool lenLimReached = false;
-
-    int palindromesFound = 0;
-    int wordsSkipped = 0;
-    int charsWritten = 0;
-    int charsOriginal = 0;
-
-    while (fgets(buf, readBufferSize, inputF) != NULL) {
-        for (int i = 0; buf[i] != '\0'; i++) {
-            char cc = buf[i];
-
-            if (cc == ' ' || cc == '\n' || cc == '\t') {
-                charsOriginal++;
-                charsOriginal += wordLen;
-                if (!notWord) {
-                    if (lenLimReached) {
-                        lenLimReached = false;
-                        wordsSkipped++;
-                    }
-                    else if (!isPalindrome(word, wordLen)) {
-                        if (fwrite(word, wordLen, 1, outputF) != 1) {
-                            printf("An error occured while writing to file\n");
-                            return;
-                        }
-                        charsWritten += wordLen;
-                    }
-                    else {
-                        palindromesFound++;
-                    }
-                }
-                if (fputc(cc, outputF) == EOF) {
-                    printf("An error occured while writing to file\n");
-                    return;
-                }
-                charsWritten++;
-                wordLen = 0;
-                notWord = true;
-                continue;
-            }
-            else {
-                notWord = false;
-                if (lenLimReached || wordLen + 1 > wordLengthLimit) {
-                    lenLimReached = true;
-                }
-                else {
-                    word[wordLen] = cc;
-                    wordLen++;
-                }
-            }
-       }
-    }
-
-    printf("Palindromes removed: %d\n", palindromesFound);
-    printf("Words skipped: %d\n", wordsSkipped);
-    printf("Original char count: %d\n", charsOriginal);
-    printf("Chars written: %d\n", charsWritten);
-}
+bool isPalindrome(char *word, int n);
+void removePalindromes(FILE *inputF, FILE *outputF);
 
 int main(int argc, char *argv[]) {
     programName = argv[0];
+    if (argc > 1) {
+        if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
+            printf(infoMsg);
+            printUsage();
+            return 0;
+        }
+    }
     if (argc != 3) {
         printUsage();
         return 1;
     }
-    if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
-        printf(
-            "-------------------------------------------------------------------\n"
-            "This program removes all palindrome words from the given input file\n"
-            "and outputs the new text into the output file. Words get skipped\n"
-            "if they go over the word length limit specified at the top of the\n"
-            "source code file.\n"
-            "-------------------------------------------------------------------\n"
-        );
-        printUsage();
-        return 0;
-    }
+
     FILE *inputF = fopen(argv[1], "r");
     if (inputF == NULL) {
         printf("An error ocurred while opening the input file\n");
@@ -136,4 +88,77 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     return 0;
+}
+
+void removePalindromes(FILE *inputF, FILE *outputF) {
+    char buf[readBufferSize];
+    char word[wordLengthLimit];
+    int wordLen = 0;
+    bool isWord = false;
+    bool lenLimReached = false;
+
+    int palindromesRemoved = 0;
+    int wordsSkipped = 0;
+
+    while (fgets(buf, readBufferSize, inputF) != NULL) {
+        for (int i = 0; buf[i] != '\0'; i++) {
+            char c = buf[i];
+
+            if (c == ' ' || c == '\n' || c == '\t') {
+                if (isWord) {
+                    if (lenLimReached) {
+                        lenLimReached = false;
+                        wordsSkipped++;
+                    }
+                    else if (!isPalindrome(word, wordLen)) {
+                        if (fwrite(word, wordLen, 1, outputF) != 1) {
+                            printf("An error occured while writing to file\n");
+                            return;
+                        }
+                    }
+                    else {
+                        palindromesRemoved++;
+                    }
+                }
+                if (fputc(c, outputF) == EOF) {
+                    printf("An error occured while writing to file\n");
+                    return;
+                }
+                wordLen = 0;
+                isWord = false;
+                continue;
+            }
+            else {
+                isWord = true;
+                if (lenLimReached || wordLen + 1 > wordLengthLimit) {
+                    lenLimReached = true;
+                }
+                else {
+                    word[wordLen] = c;
+                    wordLen++;
+                }
+            }
+       }
+    }
+
+    printf("Palindromes removed: %d\n", palindromesRemoved);
+    printf("Words skipped: %d\n", wordsSkipped);
+}
+
+bool isPalindrome(char *word, int n) {
+    if (n == 0) {
+        return false;
+    }
+    for (int l = 0, r = n - 1; r - l > 0; l++, r--) {
+        while (l < n && !isalpha(word[l])) {
+            l++;
+        }
+        while (r >= 0 && !isalpha(word[r])) {
+            r--;
+        }
+        if (tolower(word[l]) != tolower(word[r])) {
+            return false;
+        }
+    }
+    return true;
 }
