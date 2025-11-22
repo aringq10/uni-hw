@@ -9,26 +9,24 @@
     galo (tarpų skaičius turi likti nepakitęs).
 */
 
-// TODO
-// optimize writing to padding to file(store in padding buffer and then write)
-// if first arg skipped, take input from stdin
-// if second arg skipped, print to stdout
-
 // Guess how much it will take - 1.5h
 // 2025-11-22
 // Planning - 10:05-10:35
 // Code 10:45 - 11:48
 // Testing 11:52 - 12:20
 // Finishing up 12:20 - 12:35
+// Refactoring 00:30 - 1:30
 
 #include <ctype.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
 
-const unsigned int wordLengthLimit = 100;
-const unsigned int readBufferSize = 2; // Has to be larger than 1
-                                       // or program will run forever
+const unsigned int wordLengthLimit = 1024;
+const unsigned int readBufferSize = 1024; // Has to be larger than 1 or program
+                                          // will run forever. If equal to 2,
+                                          // in user input mode any line starting
+                                          // with q will terminate the program.
 char *programName;
 
 const char infoMsg[] = 
@@ -37,6 +35,8 @@ const char infoMsg[] =
     "and outputs the new text into the output file. Words get skipped\n"
     "if they go over the word length limit specified at the top of the\n"
     "source code file.\n"
+    "Replace input/output file names with '-' to read from stdin and\n"
+    "write to stdout respectively.\n"
     "-------------------------------------------------------------------\n";
 
 void printUsage() {
@@ -48,7 +48,7 @@ void printUsage() {
 }
 
 bool isPalindrome(char *word, int n);
-void removePalindromes(FILE *inputF, FILE *outputF);
+void removePalindromes(FILE *inputStream, FILE *outputStream);
 
 int main(int argc, char *argv[]) {
     programName = argv[0];
@@ -64,33 +64,44 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    FILE *inputF = fopen(argv[1], "r");
-    if (inputF == NULL) {
-        printf("An error ocurred while opening the input file\n");
-        printUsage();
-        return 1;
+    FILE *inputStream, *outputStream;
+    if (strcmp(argv[1], "-") == 0) {
+        inputStream = stdin;
     }
-    FILE *outputF = fopen(argv[2], "w");
-    if (outputF == NULL) {
-        printf("An error ocurred while opening the output file\n");
-        printUsage();
-        return 1;
+    else {
+        inputStream = fopen(argv[1], "r");
+        if (!inputStream) {
+            fprintf(stderr, "An error ocurred while opening the input file\n");
+            printUsage();
+            return 1;
+        }
+    }
+    if (strcmp(argv[2], "-") == 0) {
+        outputStream = stdout;
+    }
+    else {
+        outputStream = fopen(argv[2], "w");
+        if (!outputStream) {
+            fprintf(stderr, "An error ocurred while opening the output file\n");
+            printUsage();
+            return 1;
+        }
     }
 
-    removePalindromes(inputF, outputF);
+    removePalindromes(inputStream, outputStream);
 
-    if (fclose(inputF) != 0) {
-        printf("An error ocurred while closing the input file\n");
+    if (fclose(inputStream) != 0) {
+        fprintf(stderr, "An error ocurred while closing the input stream\n");
         return 1;
     }
-    if (fclose(outputF) != 0) {
-        printf("An error ocurred while closing the output file\n");
+    if (fclose(outputStream) != 0) {
+        fprintf(stderr, "An error ocurred while closing the output stream\n");
         return 1;
     }
     return 0;
 }
 
-void removePalindromes(FILE *inputF, FILE *outputF) {
+void removePalindromes(FILE *inputStream, FILE *outputStream) {
     char buf[readBufferSize];
     char word[wordLengthLimit];
     int wordLen = 0;
@@ -100,7 +111,14 @@ void removePalindromes(FILE *inputF, FILE *outputF) {
     int palindromesRemoved = 0;
     int wordsSkipped = 0;
 
-    while (fgets(buf, readBufferSize, inputF) != NULL) {
+    if (inputStream == stdin) {
+        printf("To stop giving input, enter 'q' followed by <Enter>\n");
+    }
+
+    while (fgets(buf, readBufferSize, inputStream)) {
+        if (inputStream == stdin && buf[0] == 'q' && buf[1] == '\n') {
+            break;
+        }
         for (int i = 0; buf[i] != '\0'; i++) {
             char c = buf[i];
 
@@ -111,8 +129,8 @@ void removePalindromes(FILE *inputF, FILE *outputF) {
                         wordsSkipped++;
                     }
                     else if (!isPalindrome(word, wordLen)) {
-                        if (fwrite(word, wordLen, 1, outputF) != 1) {
-                            printf("An error occured while writing to file\n");
+                        if (fwrite(word, 1, wordLen, outputStream) != wordLen) {
+                            printf("An error occured while writing to output stream\n");
                             return;
                         }
                     }
@@ -120,8 +138,8 @@ void removePalindromes(FILE *inputF, FILE *outputF) {
                         palindromesRemoved++;
                     }
                 }
-                if (fputc(c, outputF) == EOF) {
-                    printf("An error occured while writing to file\n");
+                if (fputc(c, outputStream) == EOF) {
+                    printf("An error occured while writing to output stream\n");
                     return;
                 }
                 wordLen = 0;
@@ -138,11 +156,13 @@ void removePalindromes(FILE *inputF, FILE *outputF) {
                     wordLen++;
                 }
             }
-       }
+        }
     }
 
+    printf("-------------------------------\n");
     printf("Palindromes removed: %d\n", palindromesRemoved);
     printf("Words skipped: %d\n", wordsSkipped);
+    printf("-------------------------------\n");
 }
 
 bool isPalindrome(char *word, int n) {
