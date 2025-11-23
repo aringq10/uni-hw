@@ -9,24 +9,13 @@
     galo (tarpų skaičius turi likti nepakitęs).
 */
 
-// Guess how much it will take - 1.5h
-// 2025-11-22
-// Planning - 10:05-10:35
-// Code 10:45 - 11:48
-// Testing 11:52 - 12:20
-// Finishing up 12:20 - 12:35
-// Refactoring 00:30 - 1:30
-
 #include <ctype.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
 
 const unsigned int wordLengthLimit = 1024;
-const unsigned int readBufferSize = 1024; // Has to be larger than 1 or program
-                                          // will run forever. If equal to 2,
-                                          // in user input mode any line starting
-                                          // with q will terminate the program.
+const unsigned int readBufferSize = 1024;
 char *programName;
 
 const char infoMsg[] = 
@@ -42,18 +31,18 @@ const char infoMsg[] =
 void printUsage() {
     printf(
         "Usage: %s inputFile outputFile\n"
-        "Try %s -h or %s --help for more details\n"
-        , programName, programName, programName
+        "Use -h for more details\n"
+        , programName
     );
 }
 
-bool isPalindrome(char *word, int n);
 void removePalindromes(FILE *inputStream, FILE *outputStream);
+bool isPalindrome(char *word, int n);
 
 int main(int argc, char *argv[]) {
     programName = argv[0];
     if (argc > 1) {
-        if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
+        if (strcmp(argv[1], "-h") == 0) {
             printf(infoMsg);
             printUsage();
             return 0;
