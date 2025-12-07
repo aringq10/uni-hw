@@ -7,7 +7,6 @@ glaze_comments = [
     "This is going straight to my favorites.",
     "I'll definitely rewatch this later.",
     "Amazing production value.",
-    "hhhhhhhhhh",
     "The idea is really helpful I learned a lot from it.",
     "The editing is amazing It made my day better.",
     "The idea is underrated It deserves more views.",
@@ -71,9 +70,4 @@ glaze_comments = [
     "The idea is underrated It made my day better.",
     "This tutorial is top notch I will definitely recommend this.",
     "The way you present is very impressive I will come back to watch it again.",
-    "8k like then I am gay..",
-    "GgHfycDhjfdjg",
-    "aaaaa aaaaaaaa",
-    "Every time someone likes this l'll come back and hear it again Edit: l could hear this all day...",
-    "Hdhdhdhdhdhhdhxgxgxhhxgdhdhdhdggdhdhdhxgbdhdixh",
 ]
