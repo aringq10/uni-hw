@@ -1,5 +1,5 @@
 ### This is a group project me and my buddies did during our first semester at VU.
-* We fetched comments from YouTube Shorts, the list of which is in ```video_ids```, and flagged them according to our defined flags.
+* We fetched comments from YouTube Shorts, the list of which is in ```video_ids```, and flagged them as "trash" according to our defined flags.
 * ```glaze_comments.py``` - we handpicked these to compare and detect similar comments using the sentence-transfomers module.
 * ```collect.py``` gathers all the .json files in flagged_comments/ and glues them together into a big .json file ```all_comments.json```
 
