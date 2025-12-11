@@ -1,13 +1,4 @@
 # -*- coding: utf-8 -*-
-
-from config import DEVELOPER_KEY, COMMENT_QUERY_COUNT, MIN_GLAZE_SCORE, MIN_EMOJI_PERC, MIN_CMT_LEN, ENABLE_CACHE
-from glaze_comments import glaze_comments
-video_ids_file = "video_ids"
-flagged_comment_path = "flagged_comments"
-cached_comment_path = "cached_comments"
-output_ext = "json"
-csv_output_path = "data.csv"
-
 import re
 import emoji
 from dataclasses import dataclass, field, asdict
@@ -18,6 +9,14 @@ import json
 from sentence_transformers import SentenceTransformer, util
 import googleapiclient.discovery
 from googleapiclient.errors import HttpError
+
+from config import *
+from glaze_comments import glaze_comments
+video_ids_file = "video_ids"
+flagged_comment_path = "flagged_comments"
+cached_comment_path = "cached_comments"
+output_ext = "json"
+csv_output_path = "data.csv"
 
 if not os.path.isfile("video_ids"):
     print(f"Error: {video_ids_file} not found.")
@@ -34,23 +33,14 @@ os.makedirs(cached_comment_path, exist_ok=True)
 os.makedirs(flagged_comment_path, exist_ok=True)
 
 @dataclass
-class CommentFlags:
-    glaze_score: float = 0
-    glaze_match: str = ""
-    many_emojis: bool = False
-    emoji_prct: float = 0.0
-    emoji_count: int = 0
-    repetitive: bool = False
-    short: bool = False
-    six_seven: bool = False
-
-@dataclass
 class Comment:
     text: str
     like_count: int
     reply_count: int
-    flags: CommentFlags = field(default_factory=CommentFlags)
-
+    emoji_prct: float = 0.0
+    glaze_score: float = 0.0
+    glaze_match: str = ""
+    flags: str = "0000"
 
 
 def has_repetitive_pattern(comment: str) -> bool:
@@ -66,9 +56,6 @@ def has_repetitive_pattern(comment: str) -> bool:
 
 def emoji_count(comment: str) -> int:
     return emoji.emoji_count(comment)
-
-def has67(comment: str) -> bool:
-    return "67" in comment
 
 
 def fetchYtComments(api_key, comment_query_count, video_id) -> list[Comment]:
@@ -94,11 +81,14 @@ def fetchYtComments(api_key, comment_query_count, video_id) -> list[Comment]:
         if cache_path.exists():
             with cache_path.open("r") as f:
                 try:
+                    if SKIP_CACHED_VIDEOS:
+                        print("    SKIP_CACHED_VIDEOS enabled: skipping video")
+                        return []
+
                     data_list = json.load(f)
-                    print("    Video already processed")
-                    return []
                     skip_fetch = True
                     print("    Reading data from cache file")
+
                     for page in data_list:
                         items = page.get("items", [])
                         for item in items:
@@ -179,52 +169,68 @@ def flag_comments(comments: list[Comment], glaze_comments, comp_model, min_comp_
     # Compute cosine similarity matrix
     similarities = util.cos_sim(embeddings1, embeddings2)
 
-    for idx_i, _ in enumerate(comments):
+    for idx_i, c in enumerate(comments):
         text = texts[idx_i]
-        # Check for other flags
-        if has_repetitive_pattern(text):
-            comments[idx_i].flags.repetitive = True
-
-        cmt_emoji_count = emoji_count(text)
-        comments[idx_i].flags.emoji_prct = cmt_emoji_count / len(text)
-        comments[idx_i].flags.emoji_count = cmt_emoji_count
-        if cmt_emoji_count / len(text) >= min_emoji_perc:
-            comments[idx_i].flags.many_emojis = True
-
-        if len(text) - cmt_emoji_count < min_cmt_len:
-            comments[idx_i].flags.short = True
-        
-        if has67(text):
-            comments[idx_i].flags.six_seven = True
+        new_flags = ""
 
         # Check for glaze
+        gs = 0.0
+        gm = ""
         for idx_j, sentence2 in enumerate(glaze_comments):
             score = similarities[idx_i][idx_j].item()
             if score >= min_comp_score:
-                comments[idx_i].flags.glaze_score = score
-                comments[idx_i].flags.glaze_match = sentence2
+                gs = score
+                gm = sentence2
                 break
+
+        cmt_emoji_count = emoji_count(text)
+        c.emoji_prct = cmt_emoji_count / len(text)
+
+        new_flags += "1" if cmt_emoji_count / len(text) >= min_emoji_perc else "0"
+        new_flags += "1" if len(text) - cmt_emoji_count < min_cmt_len else "0"
+        new_flags += "1" if has_repetitive_pattern(text) else "0"
+        new_flags += "1" if gs >= min_comp_score else "0"
+
+        if gs == 0.0:
+            delattr(c, "glaze_score")
+            delattr(c, "glaze_match")
+        else:
+            c.glaze_score = gs
+            c.glaze_match = gm
+
+        c.flags = new_flags
 
 
 def main():
     model = SentenceTransformer("all-MiniLM-L6-v2")
 
     data_output = Path(csv_output_path)
+    processed_count = 0
     count = 0
-    if os.path.exists(data_output) and os.path.getsize(data_output) == 0:
+
+    # Write CSV header row
+    if FORMAT_CSV and ((os.path.exists(data_output) and os.path.getsize(data_output) == 0) or not os.path.exists(data_output)):
         with data_output.open("w") as fo:
-            fo.write("VideoID, TotalComments, GoodComments, TrashComments, Glaze, ManyEmojis, Repetitive, Short, 67, GoodLikeAvg, FlaggedLikeAvg, GoodReplyAvg, FlaggedReplyAvg\n")
+            fo.write("VideoID, TotalComments, GoodComments, TrashComments, Glaze, ManyEmojis, Repetitive, Short, GoodLikeAvg, FlaggedLikeAvg, GoodReplyAvg, FlaggedReplyAvg\n")
 
     with data_output.open("a") as fo:
         for VIDEO_ID in video_ids:
-            print(f"Processing comments for video {VIDEO_ID}")
+            count += 1
+            progression = f"{count}/{len(video_ids)}"
+            output_file = Path(f"{flagged_comment_path}/data_{VIDEO_ID}.{output_ext}")
+
+            if SKIP_PROCESSED_VIDEOS and os.path.exists(output_file):
+                print(f"{progression} Skipping video {VIDEO_ID}: already processed")
+                continue
+
+            print(f"{progression} Processing comments for video {VIDEO_ID}")
             comments = fetchYtComments(DEVELOPER_KEY, COMMENT_QUERY_COUNT, VIDEO_ID)
 
             print(f"    {len(comments)} comments were loaded")
             if len(comments) == 0:
                 continue
             
-            count += 1
+            processed_count += 1
             flag_comments(comments, glaze_comments, model, MIN_GLAZE_SCORE, MIN_EMOJI_PERC, MIN_CMT_LEN)
 
             total = len(comments)
@@ -233,7 +239,6 @@ def main():
             short = 0
             many_emojis = 0
             glazy = 0
-            six_seven = 0
             flagged_avg_likes = 0
             flagged_avg_replies = 0
             normal_like_avg = 0
@@ -241,20 +246,19 @@ def main():
 
             for c in comments:
                 flagged_cmt = False
-                if c.flags.repetitive:
-                    repetitive += 1
-                    flagged_cmt = True
-                if c.flags.short:
-                    short += 1
-                    flagged_cmt = True
-                if c.flags.many_emojis:
+                if c.flags[0] == "1":
                     many_emojis += 1
                     flagged_cmt = True
-                if c.flags.glaze_score >= MIN_GLAZE_SCORE:
+                if c.flags[1] == "1":
+                    short += 1
+                    flagged_cmt = True
+                if c.flags[2] == "1":
+                    repetitive += 1
+                    flagged_cmt = True
+                if c.flags[3] == "1":
                     glazy += 1
                     flagged_cmt = True
-                if c.flags.six_seven:
-                    six_seven += 1
+
                 if flagged_cmt:
                     flagged_avg_likes += c.like_count
                     flagged_avg_replies += c.reply_count
@@ -262,39 +266,40 @@ def main():
                 else:
                     normal_like_avg += c.like_count
                     normal_reply_avg += c.reply_count
-
-            flagged_avg_likes /= flagged
-            flagged_avg_replies /= flagged
-            normal_like_avg /= (total - flagged)
-            normal_reply_avg /= (total - flagged)
-
-            output_string = f"{VIDEO_ID}, {total}, {total - flagged}, {flagged}, {glazy}, {many_emojis}, {repetitive}, {short}, {six_seven}, {normal_like_avg}, {flagged_avg_likes}, {normal_reply_avg}, {flagged_avg_replies}\n"
-            fo.write(output_string)
+            
+            if flagged:
+                flagged_avg_likes /= flagged
+                flagged_avg_replies /= flagged
+            if flagged != total:
+                normal_like_avg /= (total - flagged)
+                normal_reply_avg /= (total - flagged)
+            
+            if FORMAT_CSV:
+                output_string = f"{VIDEO_ID}, {total}, {total - flagged}, {flagged}, {glazy}, {many_emojis}, {repetitive}, {short}, {normal_like_avg}, {flagged_avg_likes}, {normal_reply_avg}, {flagged_avg_replies}\n"
+                fo.write(output_string)
             
             video_data = {
                 "video_id": VIDEO_ID,
                 "comment_count": str(len(comments)),
                 "flagged": str(flagged),
-                "repetetive": str(repetitive),
-                "short": str(short),
                 "many_emojis": str(many_emojis),
+                "short": str(short),
+                "repetetive": str(repetitive),
                 "glazy": str(glazy),
-                "six_seven": str(six_seven),
             }
 
             json_object = {
                 **video_data,
-                "comments": [asdict(c) for c in comments]
+                "comments": [c.__dict__ for c in comments]
             }
 
             print(f"    {flagged}/{len(comments)} comments were flagged")
             
-            output_file = Path(f"{flagged_comment_path}/data_{VIDEO_ID}.{output_ext}")
             print(f"    Writing flagged comments to {output_file}")
             with output_file.open("w") as f:
                 json.dump(json_object, f, ensure_ascii=False, indent=2)
 
-    print(f"Processed {count} video comments")
+    print(f"Processed {processed_count} video comments")
 
 
 if __name__ == "__main__":
