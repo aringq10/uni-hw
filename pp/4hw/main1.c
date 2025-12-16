@@ -1,10 +1,9 @@
-/*
-    Program for unit testing the SSList.h library
-*/
+// main1.c
+// Program for unit testing the SSList.h library
 
+#include "SLList.h"
 #include <assert.h>
 #include <stdio.h>
-#include "SLList.h"
 
 int intCompare(void *a, void *b) {
     return (*(int*)a - *(int*)b);

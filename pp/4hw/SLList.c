@@ -1,3 +1,6 @@
+// SLList.c
+// Implementation of functions in SLList.h
+
 #include "SLList.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -25,7 +28,8 @@ void listDestroy(List *list) {
 }
 
 int listInsert(List *list, int index, void *data, size_t dataSize) {
-    if (!list || index < 0 || index > list->size || !data || dataSize == 0) return 0;
+    if (!list || index < 0 || index > list->size ||
+        !data || dataSize == 0) return 0;
 
     Node *node = malloc(sizeof(Node));
     if (!node) return 0;
@@ -60,7 +64,13 @@ int listInsertEnd(List *list, void *data, size_t dataSize) {
     return listInsert(list, listSize(list), data, dataSize);
 }
 
-int listInsertArray(List *list, void *array, size_t length, size_t elementSize, int index) {
+int listInsertArray(
+    List *list,
+    void *array,
+    size_t length,
+    size_t elementSize,
+    int index
+) {
     if (!list || !array || length == 0 || elementSize == 0) return 0;
     if (index < 0 || index > listSize(list)) return 0;
 
@@ -92,7 +102,8 @@ Node *listGetNode(List *list, int index) {
 }
 
 int listSet(List *list, int index, void *data, size_t dataSize) {
-    if (!list || index < 0 || index >= list->size || !data || dataSize == 0) return 0;
+    if (!list || index < 0 || index >= list->size ||
+        !data || dataSize == 0) return 0;
 
     Node *node = listGetNode(list, index);
     if (!node) return 0;
@@ -114,7 +125,8 @@ int listRemove(List *list, int index) {
     if (index == 0) {
         toDelete = list->head;
         list->head = toDelete->next;
-    } else {
+    }
+    else {
         Node *prev = listGetNode(list, index - 1);
         toDelete = prev->next;
         prev->next = toDelete->next;
@@ -151,7 +163,8 @@ int listCompress(List *list, CompareFunc cmp) {
                 free(toDelete);
                 list->size--;
                 compressed++;
-            } else {
+            }
+            else {
                 break;
             }
         }
@@ -166,7 +179,14 @@ int listSize(List *list) {
     return list->size;
 }
 
-void printList(List *list, PrintFunc printCustom, char *separator, char *opener, char *closer, int indexing) {
+void printList(
+    List *list,
+    PrintFunc printCustom,
+    char *separator,
+    char *opener,
+    char *closer,
+    int indexing
+) {
     if (!list) {
         printf("List is NULL\n");
         return;

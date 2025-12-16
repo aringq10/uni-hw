@@ -1,13 +1,11 @@
+// commandMenu.c
+// Implementation of functions in commandMenu.h
+
 #include "commandMenu.h"
 #include "SLList.h"
 #include "studentList.h"
 #include <stdio.h>
 #include <string.h>
-
-static void printMenu();
-static int readInt(int *value);
-static int readString(char *dest, size_t maxLen);
-static int readStudentInfo(Student *student);
 
 Student students[] = {
     {"John",  "Doe",    1001, 1, 101},
@@ -123,7 +121,8 @@ void startPromptLoop() {
                 if (studentListGet(list, index, &value)) {
                     printf("Element at index %d:\n", index);
                     printStudent(value, index);
-                } else {
+                }
+                else {
                     printf("Get failed (invalid index)\n");
                 }
                 break;
@@ -200,29 +199,19 @@ static int readStudentInfo(Student *student) {
     if (!student) return 0;
 
     printf("Enter first name: ");
-    if (readString(student->firstName, MAX_NAME_LEN) != 1) {
-        return 0;
-    }
+    if (readString(student->firstName, MAX_NAME_LEN) != 1) return 0;
 
     printf("Enter last name: ");
-    if (readString(student->lastName, MAX_NAME_LEN) != 1) {
-        return 0;
-    }
+    if (readString(student->lastName, MAX_NAME_LEN) != 1) return 0;
 
     printf("Enter student ID: ");
-    if (readInt(&student->studentId) != 1) {
-        return 0;
-    }
+    if (readInt(&student->studentId) != 1) return 0;
 
     printf("Enter course number: ");
-    if (readInt(&student->courseNo) != 1) {
-        return 0;
-    }
+    if (readInt(&student->courseNo) != 1) return 0;
 
     printf("Enter group number: ");
-    if (readInt(&student->groupNo) != 1) {
-        return 0;
-    }
+    if (readInt(&student->groupNo) != 1) return 0;
 
     return 1;
 }

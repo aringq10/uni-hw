@@ -1,3 +1,6 @@
+// studentList.c
+// Implementation of functions in studentList.h
+
 #include "studentList.h"
 #include "SLList.h"
 #include <stdlib.h>
@@ -27,7 +30,12 @@ int studentListInsert(StudentList *slist, int index, Student *student) {
     return listInsert(slist->list, index, student, sizeof(Student));
 }
 
-int studentListInsertArray(StudentList *slist, void *array, size_t length, int index) {
+int studentListInsertArray(
+    StudentList *slist,
+    void *array,
+    size_t length,
+    int index
+) {
     if (!slist) return 0;
     return listInsertArray(slist->list, array, length, sizeof(Student), index);
 }
@@ -70,6 +78,7 @@ void printStudent(Student *s, int idx) {
     if (!s) return;
     printf("[%d] ", idx);
     printStudentHandler((void *)s);
+    printf("\n");
 }
 
 int compareStudentId(void *a, void *b) {
