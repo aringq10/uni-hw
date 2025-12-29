@@ -4,24 +4,23 @@ import sys
 import struct
 import time
 import select
-import binascii
+# import binascii
 
 ICMP_ECHO_REQUEST = 8
 
-def checksum(string):
+def checksum(data: bytes) -> int:
     csum = 0
-    countTo = (len(string) // 2) * 2
-    count = 0
+    n = len(data)
+    i = 0
 
-    while count < countTo:
+    while i + 1 < n:
         # thisVal = ord(string[count+1]) * 256 + ord(string[count])
-        thisVal = (ord(string[count]) << 8) + ord(string[count + 1])
-        csum = csum + thisVal
+        csum += (data[i] << 8) | data[i + 1]
         csum = (csum & 0xffff) + (csum >> 16)
-        count = count + 2
+        i += 2
 
-    if countTo < len(string):
-        csum = csum + (ord(string[len(string) - 1]) << 8)
+    if i < n:
+        csum += data[i] << 8
         csum = (csum & 0xffff) + (csum >> 16)
 
     csum = (csum & 0xffff) + (csum >> 16)
