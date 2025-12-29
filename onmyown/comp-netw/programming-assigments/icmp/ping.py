@@ -7,6 +7,11 @@ import select
 # import binascii
 
 ICMP_ECHO_REQUEST = 8
+DEF_TIMEOUT = 1
+# RTT statistics
+max = 0
+min = 0
+avg = 0
 
 def checksum(data: bytes) -> int:
     csum = 0
@@ -14,7 +19,6 @@ def checksum(data: bytes) -> int:
     i = 0
 
     while i + 1 < n:
-        # thisVal = ord(string[count+1]) * 256 + ord(string[count])
         csum += (data[i] << 8) | data[i + 1]
         csum = (csum & 0xffff) + (csum >> 16)
         i += 2
@@ -32,13 +36,27 @@ def receiveOnePing(mySocket, ID, timeout, destAddr):
         startedSelect = time.time()
         whatReady = select.select([mySocket], [], [], timeLeft)
         howLongInSelect = (time.time() - startedSelect)
-        if whatReady[0] == []: # Timeout
+
+        if whatReady[0] == []:
             return "Request timed out."
+
         timeReceived = time.time()
         recPacket, addr = mySocket.recvfrom(1024)
-        #Fill in start
+        if addr[0] != destAddr:
+            timeLeft -= howLongInSelect
+            if timeLeft <= 0:
+                return "Request timed out."
+            continue
+
         #Fetch the ICMP header from the IP packet
-        #Fill in end
+        ipLen = (recPacket[0] & 0x0f) * 4
+        if ipLen >= 20 and len(recPacket) >= ipLen + 8:
+            icmpPacket = recPacket[ipLen:]
+            icmp_type, icmp_code, _cksum, pkt_id, pkt_seq = struct.unpack("!BBHHH", icmpPacket[:8])
+            if len(icmpPacket) == 16 and icmp_type == 0 and icmp_code == 0 and pkt_id == ID:
+                timeSent = struct.unpack("d", icmpPacket[8:16])[0]
+                return f"{((timeReceived - timeSent) * 1000):.3f} ms"
+
         timeLeft = timeLeft - howLongInSelect
         if timeLeft <= 0:
             return "Request timed out."
@@ -46,40 +64,56 @@ def receiveOnePing(mySocket, ID, timeout, destAddr):
 def sendOnePing(mySocket, destAddr, ID):
     # Header is type (8), code (8), checksum (16), id (16), sequence (16)
     myChecksum = 0
-    # Make a dummy header with a 0 checksum
-    # struct -- Interpret strings as packed binary data
-    header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, myChecksum, ID, 1)
-    data = struct.pack("d", time.time())
-    # Calculate the checksum on the data and the dummy header.
-    myChecksum = checksum(str(header + data))
-    # Get the right checksum, and put in the header
-    if sys.platform == 'darwin':
-        # Convert 16-bit integers from host to network byte order
-        myChecksum = htons(myChecksum) & 0xffff
-    else:
-        myChecksum = htons(myChecksum)
-    header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, myChecksum, ID, 1)
-    packet = header + data
-    mySocket.sendto(packet, (destAddr, 1)) # AF_INET address must be tuple, not str
-    # Both LISTS and TUPLES consist of a number of objects
-    # which can be referenced by their position number within the object.
 
-def doOnePing(destAddr, timeout):
-    icmp = getprotobyname("icmp")
-    # SOCK_RAW is a powerful socket type. For more details: http://sock-raw.org/papers/sock_raw
-    mySocket = socket(AF_INET, SOCK_RAW, icmp)
+    header = struct.pack("!BBHHH", ICMP_ECHO_REQUEST, 0, myChecksum, ID, 1)
+    data = struct.pack("d", time.time())
+
+    myChecksum = checksum(header + data)
+
+    header = struct.pack("!BBHHH", ICMP_ECHO_REQUEST, 0, myChecksum, ID, 1)
+    packet = header + data
+
+    mySocket.sendto(packet, (destAddr, 1))
+
+def doOnePing(destAddr, timeout, mySocket):
     myID = os.getpid() & 0xFFFF # Return the current process id
 
     sendOnePing(mySocket, destAddr, myID)
     delay = receiveOnePing(mySocket, myID, timeout, destAddr)
+    return delay
 
 def ping(host, timeout=1):
     dest = gethostbyname(host)
     print("Pinging " + dest + " using Python:")
     print("")
-    # Send ping requests to a server separated by approximately one second
-    while 1 :
-        delay = doOnePing(dest, timeout)
-        print(delay)
-        time.sleep(1)# one second
-    return delay
+
+    icmp = getprotobyname("icmp")
+    # SOCK_RAW is a powerful socket type. For more details: http://sock-raw.org/papers/sock_raw
+    mySocket = socket(AF_INET, SOCK_RAW, icmp)
+
+    try:
+        while 1 :
+            delay = doOnePing(dest, timeout, mySocket)
+            print(delay)
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("\nStopping")
+    finally:
+        mySocket.close()
+        min = min * 1000
+        print(f"RTT min/max/avg: {min:.3f}/{max:.3f}/{avg:.3f} ms")
+
+
+def main():
+    args = sys.argv[1:]
+
+    if len(args) < 1:
+        print(f"Usage: {sys.argv[0]} <host> [timeout]")
+        raise SystemExit(2)
+
+    timeout = int(args[1]) if len(args) >= 2 else DEF_TIMEOUT
+    host = args[0]
+    ping(host, timeout)
+
+if __name__ == "__main__":
+    main()
