@@ -51,7 +51,7 @@ void init() {
         evptr->evtype =  LINK_CHANGE;
         evptr->evtime =  20000.0;
         evptr->rtpktptr =  NULL;
-        insertevent(evptr);    
+        insertevent(evptr);
     }
 
 }
@@ -177,10 +177,10 @@ void tolayer2(struct rtpkt packet) {
     evptr->eventity = packet.destid; /* event occurs at other entity */
     evptr->rtpktptr = mypktptr;       /* save ptr to my copy of packet */
 
-   /* finally, compute the arrival time of packet at the other end.
-   medium can not reorder, so make sure packet arrives between 1 and 10
-   time units after the latest arrival time of packets
-   currently in the medium on their way to the destination */
+    /* finally, compute the arrival time of packet at the other end.
+    medium can not reorder, so make sure packet arrives between 1 and 10
+    time units after the latest arrival time of packets
+    currently in the medium on their way to the destination */
     lastime = clocktime;
     for (q=evlist; q!=NULL ; q = q->next) 
         if ( (q->evtype==FROM_LAYER2  && q->eventity==evptr->eventity) ) 

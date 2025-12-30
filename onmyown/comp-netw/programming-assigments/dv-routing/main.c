@@ -83,13 +83,9 @@ int main() {
 
     init();
 
-    printf("\n------------------------------\n");
-    printf("Initial DV tables\n\n");
-    printdt0();
-    printdt1();
-    printdt2();
-    printdt3();
-    printf("------------------------------\n\n");
+    if (TRACE < 0) {
+        printdts("Initial DV tables");
+    }
 
     while (1) {
 
@@ -124,16 +120,21 @@ int main() {
         }
         else if (eventptr->evtype == LINK_CHANGE ) {
             if (clocktime<10001.0) {
+                if (TRACE < 0) {
+                    printdts("DV tables before link (0<->1) cost change from 1 to 20");
+                }
                 linkhandler0(1,20);
                 linkhandler1(0,20);
             }
             else   {
+                if (TRACE < 0) {
+                    printdts("DV tables before link (0<->1) cost change from 20 to 1");
+                }
                 linkhandler0(1,1);
                 linkhandler1(0,1);
             }
         }
-        else
-    { printf("Panic: unknown event type\n"); exit(0); }
+        else { printf("Panic: unknown event type\n"); exit(0); }
         if (eventptr->evtype == FROM_LAYER2 ) 
             free(eventptr->rtpktptr);        /* free memory for packet, if any */
         free(eventptr);                    /* free memory for event struct   */
@@ -141,13 +142,9 @@ int main() {
 
 
 terminate:
-    printf("\n------------------------------\n");
-    printf("Final DV tables\n\n");
-    printdt0();
-    printdt1();
-    printdt2();
-    printdt3();
-    printf("------------------------------\n\n");
+    if (TRACE < 0) {
+        printdts("Final DV tables");
+    }
     printf("\nSimulator terminated at t=%f, no packets in medium\n", clocktime);
 }
 

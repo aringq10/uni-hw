@@ -6,6 +6,7 @@ extern int TRACE;
 extern int YES;
 extern int NO;
 
+int connectcosts2[4] = { 3,  1,  0, 2 };
 struct distance_table dt2;
 static int neighbours[] = { 0, 1, 3 };
 static int NEIGH_COUNT = (sizeof(neighbours) / sizeof((neighbours)[0]));
@@ -28,16 +29,12 @@ void rtinit2() {
 void rtupdate2(struct rtpkt *rcvdpkt) {
     int src = rcvdpkt->sourceid;
     int *costs = rcvdpkt->mincost;
-    int changed = 0;
 
     for (int i = 0; i < 4; i++) {
         dt2.costs[i][src] = costs[i];
-        if (dt2.costs[src][2] + costs[i] < dt2.costs[i][2]) {
-            dt2.costs[i][2] = dt2.costs[src][2] + costs[i];
-            changed = 1;
-        }
     }
 
+    int changed = updatedt(&dt2, 2, neighbours, NEIGH_COUNT, connectcosts2);
     if (changed) {
         sharedt(&dt2, 2, neighbours, NEIGH_COUNT);
     }

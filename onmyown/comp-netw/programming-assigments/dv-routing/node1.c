@@ -29,15 +29,12 @@ void rtinit1() {
 void rtupdate1(struct rtpkt *rcvdpkt) {
     int src = rcvdpkt->sourceid;
     int *costs = rcvdpkt->mincost;
-    int changed = 0;
 
     for (int i = 0; i < 4; i++) {
         dt1.costs[i][src] = costs[i];
-        if (dt1.costs[src][1] + costs[i] < dt1.costs[i][1]) {
-            dt1.costs[i][1] = dt1.costs[src][1] + costs[i];
-            changed = 1;
-        }
     }
+
+    int changed = updatedt(&dt1, 1, neighbours, NEIGH_COUNT, connectcosts1);
 
     if (changed) {
         sharedt(&dt1, 1, neighbours, NEIGH_COUNT);
@@ -56,5 +53,11 @@ void linkhandler1(int linkid, int newcost)
 /* to use this routine, you'll need to change the value of the LINKCHANGE */
 /* constant definition in prog3.c from 0 to 1 */
 {
+    connectcosts1[linkid] = newcost;
+
+    int changed = updatedt(&dt1, 1, neighbours, NEIGH_COUNT, connectcosts1);
+    if (changed) {
+        sharedt(&dt1, 1, neighbours, NEIGH_COUNT);
+    }
 }
 
