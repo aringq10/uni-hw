@@ -1,3 +1,4 @@
+# Install aiosmptd to run this baddy
 from aiosmtpd.controller import Controller
 import os
 import asyncio
