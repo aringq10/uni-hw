@@ -62,10 +62,12 @@ void init() {
 /* system-supplied rand() function return an int in therange [0,mmm]        */
 /****************************************************************************/
 float jimsrand() {
-    double mmm = 2147483647;   /* largest int  - MACHINE DEPENDENT!!!!!!!!   */
-    float x;                   /* individual students may need to change mmm */ 
-    x = rand()/mmm;            /* x should be uniform in [0,1] */
-    return(x);
+    // double mmm = 2147483647;   /* largest int  - MACHINE DEPENDENT!!!!!!!!   */
+    // float x;                   /* individual students may need to change mmm */ 
+    // x = rand()/mmm;            /* x should be uniform in [0,1] */
+    // return(x);
+    return (float)rand() / (float)RAND_MAX; /* Supposed to be better, since
+                                               RAND_MAX is system dependant */
 }  
 
 /********************* EVENT HANDLINE ROUTINES *******/
