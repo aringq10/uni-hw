@@ -1,20 +1,3 @@
-*
-
-# source code
-!*.c
-!*.cpp
-!*.sh
-!*.asm
-!*.py
-!*.inc
-
-# english
-!*.docx
-
-# other
-!*.bat
-!*.zip
-!*.pdf
-!.gitignore
-!*.txt
-!*/
+*.pptx
+*.xlsx
+*.pdf

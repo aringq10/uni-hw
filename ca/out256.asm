@@ -1,6 +1,6 @@
 
     ;
-    ; Writes values 0 - 255 to given output file
+    ; Writes byte values 0 - 255 to given output file
     ;
 
 .model small
