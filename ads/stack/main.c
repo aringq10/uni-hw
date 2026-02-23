@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 int main() {
-    Stack *s1 = Create();
+    IntStack *s1 = Create();
     push(s1, 10);
     push(s1, 25);
     push(s1, 13);
@@ -16,8 +16,11 @@ int main() {
     printf("toString(s1): %s\n", str1);
     printf("count(s1): %d\n", count(s1));
     printf("isFull(s1): %d\n", isFull(s1));
-    printf("pop(s1): %d\n", *pop(s1));
-    printf("pop(s1): %d\n", *pop(s1));
+    int x;
+    pop(s1, &x);
+    printf("pop(s1): %d\n", x);
+    pop(s1, &x);
+    printf("pop(s1): %d\n", x);
     printf("capacity(s1): %d\n", capacity(s1));
     printf("count(s1): %d\n", count(s1));
     int freeSpace = capacity(s1) - count(s1);
@@ -28,7 +31,7 @@ int main() {
     printf("capacity(s1) after 32 pushes: %d\n", capacity(s1));
     printf("count(s1): %d\n", count(s1));
     printf("isFull(s1): %d\n", isFull(s1));
-    Stack *s2 = clone(s1);
+    IntStack *s2 = clone(s1);
     makeEmpty(s1);
     printf("s2 = clone(s1) and makeEmpty(s1):\n");
     printf("count(s1): %d, count(s2): %d\n", count(s1), count(s2));

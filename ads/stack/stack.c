@@ -3,14 +3,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct Stack {
+struct IntStack {
     int size;
     int capacity;
     int* data;
 };
 
-Stack* Create() {
-    Stack *s = (Stack *)malloc(sizeof(Stack));
+IntStack* Create() {
+    IntStack *s = (IntStack *)malloc(sizeof(IntStack));
     if (s == NULL) return NULL;
 
     s->size = 0;
@@ -19,28 +19,28 @@ Stack* Create() {
     return s;
 }
 
-void Done(Stack* s) {
+void Done(IntStack* s) {
     free(s->data);
     free(s);
 };
 
-int count(Stack* s) {
+int count(IntStack* s) {
     return s->size;
 };
 
-int capacity(Stack* s) {
+int capacity(IntStack* s) {
     return s->capacity;
 };
 
-int isEmpty(Stack* s) {
+int isEmpty(IntStack* s) {
     return s->size == 0;
 };
 
-int isFull(Stack* s) {
+int isFull(IntStack* s) {
     return s->size == s->capacity;
 };
 
-char* toString(Stack* s) {
+char* toString(IntStack* s) {
     if (s->data == NULL || s->size == 0) {
         char* z = malloc(sizeof(char));
         if (z == NULL) return NULL;
@@ -62,26 +62,28 @@ char* toString(Stack* s) {
     return buffer;
 };
 
-void push(Stack* s, int element) {
+int push(IntStack* s, int element) {
     if (isFull(s)) {
         s->capacity = (s->capacity == 0) ? 4 : s->capacity * 2;
 
         int* tmp = realloc(s->data, s->capacity* sizeof(int));
-        if (tmp == NULL) return;
+        if (tmp == NULL) return 1;
         s->data = tmp;
     }
     s->data[s->size] = element;
     s->size++;
+    return 0;
 };
 
-int* pop(Stack* s) {
-    if (s->size == 0) return NULL;
+int pop(IntStack* s, int* p) {
+    if (s->size == 0) return 1;
     s->size--;
-    return &(s->data[s->size]);
+    *p = s->data[s->size];
+    return 0;
 };
 
-Stack* clone(Stack* s) {
-    Stack* tmpStack = Create();
+IntStack* clone(IntStack* s) {
+    IntStack* tmpStack = Create();
     if (tmpStack == NULL) return NULL;
 
     tmpStack->data = malloc(sizeof(int) * s->capacity);
@@ -94,6 +96,6 @@ Stack* clone(Stack* s) {
     return tmpStack;
 };
 
-void makeEmpty(Stack* s) {
+void makeEmpty(IntStack* s) {
     s->size = 0;
 };
