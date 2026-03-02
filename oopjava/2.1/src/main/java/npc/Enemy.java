@@ -4,7 +4,6 @@ public class Enemy {
     protected boolean alive = true;
     protected int x = 0;
     protected int y = 0;
-    protected int speed = 5;
     protected int maxHealth = 100;
     protected int health = maxHealth;
     protected String firstName;
@@ -52,16 +51,6 @@ public class Enemy {
 
     public void setY(int y) { this.y = y; }
 
-    public void setFirstName(String firstName) {
-        if (firstName == "".strip()) return;
-        this.firstName = firstName;
-    }
-
-    public void setLastName(String lastName) {
-        if (lastName == "".strip()) return;
-        this.lastName = lastName;
-    }
-
     public void setHealth(int healthPoints) {
         if (healthPoints < 0 || healthPoints > maxHealth) return;
         health = healthPoints;
@@ -77,7 +66,7 @@ public class Enemy {
         health -= Math.min(damage, health);
     }
 
-    public void takeDamage(int damage, double multiplier) {
+    public final void takeDamage(int damage, double multiplier) {
         if (!isAlive() || damage < 0 || multiplier < 0) return;
 
         int totalDamage = (int)(damage * multiplier);

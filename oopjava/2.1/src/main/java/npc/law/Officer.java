@@ -1,4 +1,6 @@
-package npc;
+package npc.law;
+
+import npc.Enemy;
 
 public class Officer extends Enemy {
     protected int maxHealth = 125;
@@ -22,6 +24,7 @@ public class Officer extends Enemy {
 
     public static int getOfficerCount() { return officerCount; }
 
+    @Override
     public void takeDamage(int damage) {
         if (!isAlive() || damage < 0) return;
         int damageLeft = armor > damage ? 0 : damage - armor;
@@ -39,6 +42,7 @@ public class Officer extends Enemy {
         setArmor(Math.min(armor + armorPoints, maxArmor));
     }
 
+    @Override
     public String toString() {
         return super.toString() + " armor: " + getArmor();
     }

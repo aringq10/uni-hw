@@ -1,38 +1,28 @@
 // https://klevas.mif.vu.lt/~linas1/OP/uzd2.html
 
 public class Officer {
-    private int x;
-    private int y;
-    private int donuts;
-    private int health;
+    private int x = 0;
+    private int y = 0;
+    private int donuts = 0;
     private final int maxHealth = 125;
+    private int health = maxHealth;
     private String firstName;
     private String lastName;
     private static int officerCount = 0;
 
     public Officer() {
-        x = 0;
-        y = 0;
-        donuts = 0;
-        health = maxHealth;
         firstName = "";
         lastName = "";
         officerCount++;
     }
 
     public Officer(String firstName, String lastName) {
-        x = 0;
-        y = 0;
-        donuts = 0;
-        health = maxHealth;
         this.firstName = firstName;
         this.lastName = lastName;
         officerCount++;
     }
 
     public Officer(String firstName, String lastName, int x, int y) {
-        donuts = 0;
-        health = maxHealth;
         this.firstName = firstName;
         this.lastName = lastName;
         this.x = x;
@@ -60,9 +50,9 @@ public class Officer {
 
     public void takeDamage(int damage) {
         if (damage < 0) return;
-        if (this.health > 0) {
-            this.health -= this.health > damage ?
-                damage : this.health;
+        if (health > 0) {
+            health -= health > damage ?
+                damage : health;
         }
     }
 
@@ -75,17 +65,17 @@ public class Officer {
 
     public void heal(int healthPoints) {
         if (healthPoints < 0) return;
-        if (this.health + healthPoints > this.maxHealth)
-            this.health = this.maxHealth;
+        if (health + healthPoints > maxHealth)
+            health = maxHealth;
         else
-            this.health += healthPoints;
+            health += healthPoints;
     }
 
-    public void giveDonut() { this.donuts++; }
+    public void giveDonut() { donuts++; }
 
     public void eatDonut() {
-        if (this.donuts > 0) {
-            this.donuts--;
+        if (donuts > 0) {
+            donuts--;
             heal(10);
         }
     }
@@ -95,9 +85,9 @@ public class Officer {
     public void setLastName(String lastName) { this.lastName = lastName; }
 
     public void println() {
-        System.out.println("Name: " + this.firstName + " " + this.lastName);
-        System.out.println("Position: " + this.x + " " + this.y);
-        System.out.println("Health: " + this.health);
-        System.out.println("Donuts left: " + this.donuts);
+        System.out.println("Name: " + getFirstName() + " " + getLastName() +
+                           " x: " + getX() + " y: " + getY() + " hp: " + getHealth() +
+                           " donuts: " + getDonuts());
     }
+
 }
