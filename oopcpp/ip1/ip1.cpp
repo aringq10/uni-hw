@@ -7,21 +7,20 @@
 
 class Dish
 {
-private:
+public:
     static int nextId;
     static int objectCount;
 
     int id;
     std::string name;
     int calories;
-    double protein;
     double carbs;
+    double protein;
     double fat;
 
-public:
     Dish(std::string name, int calories)
         : id(nextId++), name(""), calories(0),
-          protein(0.0), carbs(0.0), fat(0.0)
+          carbs(0.0), protein(0.0), fat(0.0)
     {
         setName(name);
         setCalories(calories);
@@ -29,113 +28,98 @@ public:
     }
 
     Dish(std::string name, int calories,
-         double protein, double carbs, double fat)
+         double carbs, double protein, double fat)
         : id(nextId++), name(""), calories(0),
-          protein(0.0), carbs(0.0), fat(0.0)
+          carbs(0.0), protein(0.0), fat(0.0)
     {
         setName(name);
         setCalories(calories);
-        setProtein(protein);
         setCarbs(carbs);
+        setProtein(protein);
         setFat(fat);
         objectCount++;
     }
 
-    ~Dish()
-    {
-        objectCount--;
-    }
+    int getId() { return id; }
 
-    int getId()
-    {
-        return id;
-    }
+    std::string getName() { return name; }
 
-    std::string getName()
-    {
-        return name;
-    }
+    int getCalories() { return calories; }
 
-    int getCalories()
-    {
-        return calories;
-    }
+    double getCarbs() { return carbs; }
 
-    double getProtein()
-    {
-        return protein;
-    }
+    double getProtein() { return protein; }
 
-    double getCarbs()
-    {
-        return carbs;
-    }
+    double getFat() { return fat; }
 
-    double getFat()
-    {
-        return fat;
-    }
-
-    static int getObjectCount()
-    {
-        return objectCount;
-    }
+    static int getObjectCount() { return objectCount; }
 
     void setName(std::string name)
     {
-        if (name.empty())
+        if (!name.empty())
+        {
+            this->name = name;
+        }
+        else
         {
             throw std::invalid_argument("Name cannot be empty.");
         }
-        this->name = name;
     }
 
     void setCalories(int calories)
     {
-        if (calories < 0)
+        if (calories >= 0) {
+            this->calories = calories;
+        }
+        else
         {
             throw std::invalid_argument("Calories cannot be negative.");
         }
-        this->calories = calories;
-    }
-
-    void setProtein(double protein)
-    {
-        if (protein < 0)
-        {
-            throw std::invalid_argument("Protein cannot be negative.");
-        }
-        this->protein = protein;
     }
 
     void setCarbs(double carbs)
     {
-        if (carbs < 0)
+        if (carbs >= 0) {
+            this->carbs = carbs;
+        }
+        else
         {
             throw std::invalid_argument("Carbs cannot be negative.");
         }
-        this->carbs = carbs;
+    }
+
+    void setProtein(double protein)
+    {
+        if (protein >= 0) {
+            this->protein = protein;
+        }
+        else
+        {
+            throw std::invalid_argument("Protein cannot be negative.");
+        }
     }
 
     void setFat(double fat)
     {
-        if (fat < 0)
+        if (fat >= 0)
+        {
+            this->fat = fat;
+        }
+        else
         {
             throw std::invalid_argument("Fat cannot be negative.");
         }
-        this->fat = fat;
     }
 
     std::string toString()
     {
         std::stringstream ss;
-        ss << "Dish \"" << name
-           << "\", ID=" << id
-           << ", Calories=" << calories
-           << ", Protein=" << protein
-           << "g, Carbs=" << carbs
-           << "g, Fat=" << fat
-           << "g";
+        ss << name     << " "
+           << id       << " "
+           << calories << " "
+           << carbs    << " "
+           << protein  << " "
+           << fat;
         return ss.str();
     }
 };
@@ -153,19 +137,19 @@ int main()
         // TEST 1
         // Create object, test getters and toString
         // =========================
-        Dish d1("Pasta", 500, 20.0, 60.0, 10.0);
+        Dish d1("Pasta", 500, 60.0, 20.0, 10.0);
 
         assert(Dish::getObjectCount() == 1);
 
         assert(d1.getName() == "Pasta");
         assert(d1.getCalories() == 500);
-        assert(d1.getProtein() == 20.0);
         assert(d1.getCarbs() == 60.0);
+        assert(d1.getProtein() == 20.0);
         assert(d1.getFat() == 10.0);
 
         std::string expected =
-            "Dish \"Pasta\", ID=" + std::to_string(d1.getId()) +
-            ", Calories=500, Protein=20g, Carbs=60g, Fat=10g";
+            "Pasta " + std::to_string(d1.getId()) +
+            " 500 60 20 10";
 
         assert(d1.toString() == expected);
 
@@ -175,14 +159,14 @@ int main()
         // =========================
         d1.setName("Rice");
         d1.setCalories(300);
-        d1.setProtein(8.0);
         d1.setCarbs(70.0);
+        d1.setProtein(8.0);
         d1.setFat(2.0);
 
         assert(d1.getName() == "Rice");
         assert(d1.getCalories() == 300);
-        assert(d1.getProtein() == 8.0);
         assert(d1.getCarbs() == 70.0);
+        assert(d1.getProtein() == 8.0);
         assert(d1.getFat() == 2.0);
 
         // =========================
