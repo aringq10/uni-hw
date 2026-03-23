@@ -11,13 +11,13 @@ public class Enemy {
 
     private int id;
     private static int nextId = 0;
-    private static int enemyCount = 0;
+    private static int count = 0;
 
     public Enemy(String firstName, String lastName) {
         this.firstName = firstName;
         this.lastName = lastName;
         id = nextId;
-        nextId++; enemyCount++;
+        nextId++; count++;
     }
 
     public Enemy(String firstName, String lastName, int x, int y) {
@@ -26,7 +26,7 @@ public class Enemy {
         this.x = x;
         this.y = y;
         id = nextId;
-        nextId++; enemyCount++;
+        nextId++; count++;
     }
 
     public boolean isAlive() { return health > 0; }
@@ -45,7 +45,7 @@ public class Enemy {
 
     public int getId() { return id; }
 
-    public static int getEnemyCount() { return enemyCount; }
+    public static int getCount() { return count; }
 
     public void setX(int x) { this.x = x; }
 
@@ -74,7 +74,7 @@ public class Enemy {
     }
 
     public String toString() {
-        return "Name: " + getFirstName() + " " + getLastName() +
+        return getFirstName() + " " + getLastName() +
                " x: " + getX() + " y: " + getY() + " hp: " + getHealth();
     }
 }

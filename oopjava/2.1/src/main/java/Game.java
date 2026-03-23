@@ -4,7 +4,38 @@ import npc.civilian.Citizen;
 
 public class Game {
     public static void main(String[] args) {
-        Enemy e1 = new Citizen("John", "Doe");
-        Enemy e2 = new Officer("Jane", "Smith");
+        Enemy c1= new Citizen("John", "Doe", "Bartender");
+        Enemy o1 = new Officer("Jane", "Smith");
+
+        System.out.println("enemy count: " + Enemy.getCount());
+        System.out.println("citizen count: " + Citizen.getCount());
+        System.out.println("officer count: " + Officer.getCount());
+        System.out.println("-- Enemies:");
+        System.out.println(c1.toString());
+        System.out.println(o1.toString());
+
+        System.out.println("-- Dealing 50 damage:");
+        c1.takeDamage(50);
+        o1.takeDamage(50);
+        System.out.println(c1.toString());
+        System.out.println(o1.toString());
+
+        System.out.println("-- Dealing 100 damage:");
+        c1.takeDamage(100);
+        o1.takeDamage(100);
+        System.out.println(c1.toString());
+        System.out.println(o1.toString());
+
+        System.out.println("-- Dealing 100 damage:");
+        c1.takeDamage(100);
+        o1.takeDamage(100);
+        System.out.println(c1.toString());
+        System.out.println(o1.toString());
+
+        Citizen c2 = new Citizen("Jonas", "Ponas");
+
+        System.out.println("-- New citizen, changing rep +10");
+        c2.changeReputation(10);
+        System.out.println(c2.toString());
     }
 }

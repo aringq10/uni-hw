@@ -3,7 +3,7 @@ package npc.civilian;
 import npc.Enemy;
 
 public class Citizen extends Enemy {
-    private static int citizenCount = 0;
+    private static int count = 0;
 
     private String profession;
     private int reputation;
@@ -13,38 +13,30 @@ public class Citizen extends Enemy {
         super(firstName, lastName);
         this.profession = "Unemployed";
         this.reputation = 0;
-        citizenCount++;
+        count++;
     }
 
     public Citizen(String firstName, String lastName, String profession) {
         super(firstName, lastName);
         this.profession = profession;
         this.reputation = 0;
-        citizenCount++;
+        count++;
     }
 
     public Citizen(String firstName, String lastName, String profession, int x, int y) {
         super(firstName, lastName, x, y);
         this.profession = profession;
         this.reputation = 0;
-        citizenCount++;
+        count++;
     }
 
-    public static int getCitizenCount() {
-        return citizenCount;
-    }
+    public static int getCount() { return count; }
 
-    public String getProfession() {
-        return profession;
-    }
+    public String getProfession() { return profession; }
 
-    public int getReputation() {
-        return reputation;
-    }
+    public int getReputation() { return reputation; }
 
-    public boolean isPanicking() {
-        return panicking;
-    }
+    public boolean isPanicking() { return panicking; }
 
     public void changeReputation(int amount) {
         reputation = Math.max(-100, Math.min(100, reputation + amount));
@@ -69,8 +61,8 @@ public class Citizen extends Enemy {
     @Override
     public String toString() {
         return super.toString() +
-               " profession: " + profession +
-               " reputation: " + reputation +
-               " panicking: " + panicking;
+               " prof: " + profession +
+               " rep: " + reputation +
+               " panic: " + panicking;
     }
 }

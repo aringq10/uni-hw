@@ -6,23 +6,23 @@ public class Officer extends Enemy {
     protected int maxHealth = 125;
     protected int maxArmor = 125;
     protected int armor = maxArmor;
-    private static int officerCount = 0;
+    private static int count = 0;
 
     public Officer(String firstName, String lastName) {
         super(firstName, lastName);
-        officerCount++;
+        count++;
     }
 
     public Officer(String firstName, String lastName, int x, int y) {
         super(firstName, lastName, x, y);
-        officerCount++;
+        count++;
     }
 
     public int getMaxArmor() { return maxArmor; }
 
     public int getArmor() { return armor; }
 
-    public static int getOfficerCount() { return officerCount; }
+    public static int getCount() { return count; }
 
     @Override
     public void takeDamage(int damage) {
