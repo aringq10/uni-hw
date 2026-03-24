@@ -1,6 +1,6 @@
 package npc;
 
-public class Enemy {
+public abstract class Enemy implements Movable {
     protected boolean alive = true;
     protected int x = 0;
     protected int y = 0;
@@ -47,9 +47,15 @@ public class Enemy {
 
     public static int getCount() { return count; }
 
-    public void setX(int x) { this.x = x; }
+    public void move(int dx, int dy) {
+        x += dx;
+        y += dy;
+    }
 
-    public void setY(int y) { this.y = y; }
+    public void setPosition(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
 
     public void setHealth(int healthPoints) {
         if (healthPoints < 0 || healthPoints > maxHealth) return;

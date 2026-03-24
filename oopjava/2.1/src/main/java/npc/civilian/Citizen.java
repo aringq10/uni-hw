@@ -1,8 +1,9 @@
 package npc.civilian;
 
 import npc.Enemy;
+import npc.Controllable;
 
-public class Citizen extends Enemy {
+public class Citizen extends Enemy implements Controllable {
     private static int count = 0;
 
     private String profession;
@@ -37,6 +38,23 @@ public class Citizen extends Enemy {
     public int getReputation() { return reputation; }
 
     public boolean isPanicking() { return panicking; }
+
+    public void moveUp() {
+        move(0, 1);
+    };
+
+    public void moveDown() {
+        move(0, -1);
+    };
+
+    public void moveLeft() {
+        move(-1, 0);
+    };
+
+    public void moveRight() {
+        move(1, 0);
+
+    };
 
     public void changeReputation(int amount) {
         reputation = Math.max(-100, Math.min(100, reputation + amount));
