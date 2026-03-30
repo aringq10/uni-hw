@@ -51,6 +51,7 @@ typedef struct {
  *   solutionFound    - nonzero if a solution was found
  *   error            - nonzero if an error occurred
  *   errorMsg         - error message (NULL if no error)
+ *   stopSearch       - flag to stop searching
  *
  * OUTPUT:
  *   solutionCount    - number of solutions found
@@ -59,8 +60,8 @@ typedef struct {
  *
  * OWNERSHIP:
  *   volumes          - owned by caller
- *   solutions        - owned by caller; must be freed with freeSolutions,
- *                      clearSolver or freeSolver
+ *   solutions        - allocated and managed internally by the solver, freed
+ *                      by caller via freeSolver or clearSolver, but no directly
 */
 typedef struct {
     int n;
@@ -75,6 +76,7 @@ typedef struct {
     clock_t endTime;
     int timedOut;
     int solutionFound;
+    int stopSearch;
     int error;
     char *errorMsg;
     int solutionCount;
@@ -103,7 +105,6 @@ void backtrack(Solver *s, int idx,
                int *whichBin,
                int *binVolumes,
                int usedBins,
-               int *permutations,
                int *bestBinCount);
 void firstMatch(Solver * s);
 void fullSearch(Solver * s);

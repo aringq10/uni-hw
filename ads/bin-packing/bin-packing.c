@@ -4,10 +4,23 @@
 #include <time.h>
 #include "bin-packing.h"
 
+void resetSolver(Solver *s) {
+    s->startTime = 0;
+    s->endTime= 0;
+    s->timedOut = 0;
+    s->solutionFound = 0;
+    s->stopSearch = 0;
+    s->error = 0;
+    s->errorMsg = NULL;
+    s->solutionCount = 0;
+    s->solutionCapacity = 0;
+    s->solutions = NULL;
+}
+
 Solver *solverInit(void) {
     Solver *s = malloc(sizeof(Solver));
     if (!s) return NULL;
-
+    resetSolver(s);
     s->n = 0;
     s->capacity = 0;
     s->volumes = NULL;
@@ -15,15 +28,6 @@ Solver *solverInit(void) {
     s->heuristic = 1;
     s->isTimeout = NULL;
     s->timeoutMs = -1;
-    s->startTime = 0;
-    s->endTime= 0;
-    s->timedOut = 0;
-    s->solutionFound = 0;
-    s->error = 0;
-    s->errorMsg = NULL;
-    s->solutionCount = 0;
-    s->solutionCapacity = 0;
-    s->solutions = NULL;
 
     return s;
 }
@@ -37,6 +41,7 @@ Solution *solutionInit(int n) {
         s->whichBin = whichBin;
         return s;
     } else {
+        free(s); free(whichBin);
         return NULL;
     }
 };
@@ -74,12 +79,15 @@ void addSolution(Solver *s, Solution sol) {
 void clearSolution(Solution *sol) {
     if (!sol) return;
     free(sol->whichBin);
+    sol->whichBin = NULL;
+    sol->binCount = 0;
 }
 
 void freeSolution(Solution *sol) {
     if (!sol) return;
     clearSolution(sol);
     free(sol);
+    sol = NULL;
 }
 
 void freeSolutions(Solution *list, int count) {
@@ -92,19 +100,27 @@ void freeSolutions(Solution *list, int count) {
 void clearSolver(Solver *s) {
     if (!s) return;
     freeSolutions(s->solutions, s->solutionCount);
+    resetSolver(s);
+    s->solutions = NULL;
 }
 
 void freeSolver(Solver *s) {
     if (!s) return;
     clearSolver(s);
     free(s);
+    s = NULL;
 }
 
 void firstFit(Solver *s) {
     s->startTime = clock();
-    int binVolumes[MAX_N];
+    int *binVolumes = calloc(s->n, sizeof(int));
+    if (!binVolumes) {
+        s->errorMsg = "Malloc failed for binVolumes";
+        s->error = 1; return;
+    }
     Solution *sol = solutionInit(s->n);
     if (!sol) {
+        free(binVolumes);
         s->errorMsg = "Malloc failed for Solution";
         s->error = 1; return;
     }
@@ -116,6 +132,8 @@ void firstFit(Solver *s) {
             if (s->isTimeout(s->startTime, s->timeoutMs)) {
                 s->timedOut = 1;
                 s->solutionFound = 0;
+                free(binVolumes);
+                freeSolution(sol);
                 return;
             };
             if (binVolumes[j] + s->volumes[i] <= s->capacity) {
@@ -136,6 +154,7 @@ void firstFit(Solver *s) {
     s->timedOut = 0;
     s->solutionFound = 1;
     addSolution(s, *sol);
+    free(binVolumes);
     freeSolution(sol);
 }
 
@@ -148,18 +167,19 @@ void backtrack(Solver *s, int idx,
                int *whichBin,
                int *binVolumes,
                int usedBins,
-               int *permutations,
                int *bestBinCount)
 {
-    if (s->isTimeout(s->startTime, s->timeoutMs)) {
+    if (s->isTimeout(s->startTime, s->timeoutMs) || s->timedOut) {
         s->timedOut = 1;
-        s->solutionFound = 0;
+        if (s->solutionCount > 0) {
+            s->solutionFound = 1;
+        } else s->solutionFound = 0;
         return;
     }
 
-    if (usedBins > *bestBinCount) {
-        return;
-    }
+    if (s->mode != FIRST_MATCH && usedBins > *bestBinCount) return;
+
+    if (s->stopSearch) return;
 
     if (idx == s->n) {
         if (usedBins < *bestBinCount) {
@@ -170,22 +190,32 @@ void backtrack(Solver *s, int idx,
             *bestBinCount = usedBins;
             Solution sol = {usedBins, s->n, whichBin};
             addSolution(s, sol);
+            s->solutionFound = 1;
+            if (s->mode == FIRST_MATCH || s->error) {
+                s->stopSearch = 1;
+            }
+            if (s->error) s->solutionFound = 0;
         } else if (usedBins == *bestBinCount) {
             Solution sol = {usedBins, s->n, whichBin};
             addSolution(s, sol);
+            s->solutionFound = 1;
+            if (s->mode == FIRST_MATCH || s->error) {
+                s->stopSearch = 1;
+            }
+            if (s->error) s->solutionFound = 0;
         }
-        (*permutations)++;
         return;
     }
 
     int volume = s->volumes[idx];
 
     for (int j = 0; j < usedBins; j++) {
+        if (j > 0 && binVolumes[j] == binVolumes[j-1]) continue;
         if (binVolumes[j] + volume <= s->capacity) {
             binVolumes[j] += volume;
             whichBin[idx] = j + 1;
 
-            backtrack(s, idx + 1, whichBin, binVolumes, usedBins, permutations, bestBinCount);
+            backtrack(s, idx + 1, whichBin, binVolumes, usedBins, bestBinCount);
 
             binVolumes[j] -= volume;
         }
@@ -194,28 +224,19 @@ void backtrack(Solver *s, int idx,
     binVolumes[usedBins] = volume;
     whichBin[idx] = usedBins + 1;
 
-    backtrack(s, idx + 1, whichBin, binVolumes, usedBins + 1, permutations, bestBinCount);
+    backtrack(s, idx + 1, whichBin, binVolumes, usedBins + 1, bestBinCount);
 
     binVolumes[usedBins] = 0;
 }
 
-void firstMatch(Solver * s) {
-    s->solutionFound = 0;
-    s->timedOut = 0;
-    printf("First match search not implemented\n");
-};
-
 void fullSearch(Solver * s) {
-    s->solutionFound = 1;
     int n = s->n;
 
     int *binVolumes = (int *)calloc(n, sizeof(int));
     int *whichBin = (int *)malloc(n * sizeof(int));
-    int p = 0;
 
     if (binVolumes && whichBin) {
-        backtrack(s, 0, whichBin, binVolumes,
-                  0, &p, &n);
+        backtrack(s, 0, whichBin, binVolumes, 0, &n);
     } else {
         s->error = 1;
         s->errorMsg = "Malloc failed for fullSearch";
@@ -244,7 +265,7 @@ void solve(Solver *s) {
     s->startTime = clock();
     switch (s->mode) {
         case FIRST_MATCH: {
-            firstMatch(s);
+            fullSearch(s);
             break;
         }
         case HEURISTIC: {
@@ -269,12 +290,14 @@ void solve(Solver *s) {
 
 void printSolution(Solver *s, Solution sol) {
     int *counts = calloc(sol.binCount, sizeof(int));
+    if (!counts) return;
 
     for (int i = 0; i < sol.n; i++) {
         counts[sol.whichBin[i] - 1]++;
     }
 
     int **bins = malloc(sol.binCount * sizeof(int *));
+    if (!bins) return;
     for (int b = 0; b < sol.binCount; b++) {
         bins[b] = malloc(counts[b] * sizeof(int));
         counts[b] = 0;
