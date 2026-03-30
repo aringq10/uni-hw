@@ -4,36 +4,25 @@
 #include <time.h>
 #include "bin-packing.h"
 
-int compareDecr(const void *a, const void *b) {
-    return (*(int*)b - *(int*)a);
-}
-
-int isTimeout(clock_t start, int timeoutMs) {
-    if (timeoutMs < 0) return 0;
-
-    clock_t now = clock();
-    double elapsedMs = (double)(now - start) * 1000.0 / CLOCKS_PER_SEC;
-
-    return elapsedMs >= timeoutMs;
-}
-
 Solver *solverInit(void) {
     Solver *s = malloc(sizeof(Solver));
     if (!s) return NULL;
 
-    s->volumes = NULL;
-    s->capacity = 0;
     s->n = 0;
-    s->mode = HEURISTIC;
+    s->capacity = 0;
+    s->volumes = NULL;
+    s->mode = FULL;
     s->heuristic = 1;
     s->isTimeout = NULL;
     s->timeoutMs = -1;
     s->startTime = 0;
+    s->endTime= 0;
     s->timedOut = 0;
     s->solutionFound = 0;
     s->error = 0;
     s->errorMsg = NULL;
     s->solutionCount = 0;
+    s->solutionCapacity = 0;
     s->solutions = NULL;
 
     return s;
@@ -319,4 +308,17 @@ void printSolutions(Solver *s) {
         Solution sol = sols[a];
         printSolution(s, sol);
     }
+}
+
+int compareDecr(const void *a, const void *b) {
+    return (*(int*)b - *(int*)a);
+}
+
+int isTimeout(clock_t start, int timeoutMs) {
+    if (timeoutMs < 0) return 0;
+
+    clock_t now = clock();
+    double elapsedMs = (double)(now - start) * 1000.0 / CLOCKS_PER_SEC;
+
+    return elapsedMs >= timeoutMs;
 }

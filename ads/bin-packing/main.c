@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
 
     Solver *s = solverInit();
     if (!s) {
-        printf("Malloc failed for Solver\n");
+        fprintf(stderr, "Malloc failed for Solver\n");
         return 1;
     }
 
@@ -100,7 +100,8 @@ int main(int argc, char *argv[]) {
     double elapsedMs = (double)(s->endTime - s->startTime) * 1000.0 / CLOCKS_PER_SEC;
 
     if (s->error) {
-        printf("Solve Error: %s\n", s->errorMsg);
+        fprintf(stderr, "Solve Error: %s\n", s->errorMsg);
+        return 1;
     } else if (s->timedOut) {
         printf("Timed out: %.4fms\n", elapsedMs);
     } else if (s->solutionFound) {

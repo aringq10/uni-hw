@@ -117,5 +117,7 @@ void solve(Solver *s);
 void addSolution(Solver *s, Solution sol);
 void printSolution(Solver *s, Solution sol);
 void printSolutions(Solver *s);
+int compareDecr(const void *a, const void *b);
+int isTimeout(clock_t start, int timeoutMs);
 
 #endif

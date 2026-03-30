@@ -1,3 +1,5 @@
-main: main.c stack.c stack.h
-	gcc main.c stack.c -o main
+main.exe: main.c stack.o
+	gcc -std=c99 main.c stack.o -o main.exe
+stack.o: stack.c stack.h
+	gcc -std=c99 -c stack.c
 
