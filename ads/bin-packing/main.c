@@ -6,7 +6,7 @@
 
 int main(int argc, char *argv[]) {
     FILE *input = stdin;
-    SearchMode mode = HEURISTIC;
+    SearchMode mode = FULL;
     int timeout = -1;
     int heuristic = 1;
 
@@ -54,38 +54,63 @@ int main(int argc, char *argv[]) {
     int volumes[MAX_N];
     int n;
     int capacity;
-    int result;
 
     if (fscanf(input, "%d", &capacity) != 1) {
         fprintf(stderr, "Error reading capacity\n");
         return 1;
+    } else if (capacity <= 0) {
+        fprintf(stderr, "Capacity must be positive: %d\n", capacity);
+        return 1;
     }
 
-    if (fscanf(input, "%d", &n) != 1 || n <= 0 || n > MAX_N) {
-        fprintf(stderr, "Invalid number of items\n");
+    if (fscanf(input, "%d", &n) != 1) {
+        fprintf(stderr, "Error reading number of items\n");
+        return 1;
+    } else if (n <= 0 || n > MAX_N) {
+        fprintf(stderr, "Invalid number of items: %d\n", n);
         return 1;
     }
 
     for (int i = 0; i < n; i++) {
         if (fscanf(input, "%d", &volumes[i]) != 1) {
-            fprintf(stderr, "Error reading item %d\n", i);
+            fprintf(stderr, "Error reading volume of item %d\n", i + 1);
+            return 1;
+        } else if (volumes[i] > capacity) {
+            fprintf(stderr, "Volumes of all items must be less than the capacity\n");
             return 1;
         }
     }
 
     if (input != stdin) fclose(input);
 
-    Solver s;
-    Solver_init(&s);
+    Solver *s = solverInit();
+    if (!s) {
+        printf("Malloc failed for Solver\n");
+        return 1;
+    }
 
-    s.volumes = volumes;
-    s.capacity = capacity;
-    s.n = n;
-    s.mode = mode;
-    s.heuristic = heuristic;
-    s.timeout_ms = timeout;
+    s->volumes = volumes;
+    s->capacity = capacity;
+    s->n = n;
+    s->mode = mode;
+    s->heuristic = heuristic;
+    s->timeoutMs = timeout;
 
-    solve(&s);
+    solve(s);
+    double elapsedMs = (double)(s->endTime - s->startTime) * 1000.0 / CLOCKS_PER_SEC;
+
+    if (s->error) {
+        printf("Solve Error: %s\n", s->errorMsg);
+    } else if (s->timedOut) {
+        printf("Timed out: %.4fms\n", elapsedMs);
+    } else if (s->solutionFound) {
+        printf("Timed elapsed: %.4fms\n", elapsedMs);
+        printSolutions(s);
+    } else {
+        printf("No solution found\n");
+    }
+
+    freeSolver(s);
 
     return 0;
 }
