@@ -4,19 +4,6 @@
 #include <time.h>
 #include "bin-packing.h"
 
-void resetSolver(Solver *s) {
-    s->startTime = 0;
-    s->endTime= 0;
-    s->timedOut = 0;
-    s->solutionFound = 0;
-    s->stopSearch = 0;
-    s->error = 0;
-    s->errorMsg = NULL;
-    s->solutionCount = 0;
-    s->solutionCapacity = 0;
-    s->solutions = NULL;
-}
-
 Solver *solverInit(void) {
     Solver *s = malloc(sizeof(Solver));
     if (!s) return NULL;
@@ -95,13 +82,13 @@ void freeSolutions(Solution *list, int count) {
         clearSolution(&list[i]);
     }
     free(list);
+    list = NULL;
 }
 
 void clearSolver(Solver *s) {
     if (!s) return;
     freeSolutions(s->solutions, s->solutionCount);
     resetSolver(s);
-    s->solutions = NULL;
 }
 
 void freeSolver(Solver *s) {
@@ -112,7 +99,6 @@ void freeSolver(Solver *s) {
 }
 
 void firstFit(Solver *s) {
-    s->startTime = clock();
     int *binVolumes = calloc(s->n, sizeof(int));
     if (!binVolumes) {
         s->errorMsg = "Malloc failed for binVolumes";
@@ -159,7 +145,7 @@ void firstFit(Solver *s) {
 }
 
 void firstFitDecreasing(Solver *s) {
-    qsort(s->volumes, s->n, sizeof(int), compareDecr);
+    qsort(s->volumes, s->n, sizeof(int), compareDesc);
     firstFit(s);
 }
 
@@ -288,7 +274,7 @@ void solve(Solver *s) {
     s->endTime = clock();
 }
 
-void printSolution(Solver *s, Solution sol) {
+void printSolution(int *volumes, Solution sol) {
     int *counts = calloc(sol.binCount, sizeof(int));
     if (!counts) return;
 
@@ -305,7 +291,7 @@ void printSolution(Solver *s, Solution sol) {
 
     for (int i = 0; i < sol.n; i++) {
         int b = sol.whichBin[i] - 1;
-        bins[b][counts[b]++] = s->volumes[i];
+        bins[b][counts[b]++] = volumes[i];
     }
 
     for (int b = 0; b < sol.binCount; b++) {
@@ -329,11 +315,11 @@ void printSolutions(Solver *s) {
 
     for (int a = 0; a < s->solutionCount; a++) {
         Solution sol = sols[a];
-        printSolution(s, sol);
+        printSolution(s->volumes, sol);
     }
 }
 
-int compareDecr(const void *a, const void *b) {
+int compareDesc(const void *a, const void *b) {
     return (*(int*)b - *(int*)a);
 }
 
@@ -344,4 +330,17 @@ int isTimeout(clock_t start, int timeoutMs) {
     double elapsedMs = (double)(now - start) * 1000.0 / CLOCKS_PER_SEC;
 
     return elapsedMs >= timeoutMs;
+}
+
+void resetSolver(Solver *s) {
+    s->startTime = 0;
+    s->endTime= 0;
+    s->timedOut = 0;
+    s->solutionFound = 0;
+    s->stopSearch = 0;
+    s->error = 0;
+    s->errorMsg = NULL;
+    s->solutionCount = 0;
+    s->solutionCapacity = 0;
+    s->solutions = NULL;
 }

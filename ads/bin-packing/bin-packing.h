@@ -3,8 +3,6 @@
 
 #include <time.h>
 
-#define MAX_N 1000
-
 typedef enum {
     FULL,
     FIRST_MATCH,
@@ -72,6 +70,7 @@ typedef struct {
     int heuristic;
     int (*isTimeout)(clock_t start, int timeoutMs);
     int timeoutMs;
+
     clock_t startTime;
     clock_t endTime;
     int timedOut;
@@ -84,23 +83,45 @@ typedef struct {
     Solution *solutions;
 } Solver;
 
-// Constructors
+/* --- CONSTRUCTORS --- */
 
+// Returns NULL on unsuccessful malloc
 Solver *solverInit(void);
+
+// Returns NULL on unsuccessful malloc
+// n - number of items to fit into bins
 Solution *solutionInit(int n);
 
-// Destructors
+/* --- DESTRUCTORS --- */
 
+// Frees Solution's whichBin array, sets it to NULL and binCount to 0
 void clearSolution(Solution *sol);
+
+// Same as clearSolution, but also frees Solution itself, sets it to NULL
 void freeSolution(Solution *sol);
+
+// Frees count Solution elements from list and list itself, sets it to NULL
 void freeSolutions(Solution *list, int count);
+
+/*
+ * Frees Solver's solutions array via freeSolutions, resets runtime
+ * values via resetSolver
+*/
 void clearSolver(Solver *s);
+
+// Same as clearSolver, but also frees Solver itself, sets it to NULL
 void freeSolver(Solver *s);
 
-// Algorithms
+/* --- ALGORITHM IMPLEMENTATIONS --- */
 
 void firstFit(Solver *s);
 void firstFitDecreasing(Solver *s);
+/*
+ * whichBin   - array size of s->n; see Solution.whichBin
+ * binVolumes - array of size s->n;
+ *
+ * Caller is responsible for freeing whichBin and binVolumes arrays
+*/
 void backtrack(Solver *s, int idx,
                int *whichBin,
                int *binVolumes,
@@ -109,16 +130,32 @@ void backtrack(Solver *s, int idx,
 void firstMatch(Solver * s);
 void fullSearch(Solver * s);
 
-// Entry point
+/* --- ENTRY POINT --- */
 
+/*
+ * Calls algorithms based on s->mode, returns solutions
+ * via s->solutions (see Solver and Solution)
+*/
 void solve(Solver *s);
 
-// Other
+/* --- OTHER --- */
 
+// Dinamically add sol to s->solutions
 void addSolution(Solver *s, Solution sol);
-void printSolution(Solver *s, Solution sol);
+
+// Print sol, needs items volume array
+void printSolution(int *volumes, Solution sol);
+
+// Print s->solutions
 void printSolutions(Solver *s);
-int compareDecr(const void *a, const void *b);
+
+// Descending compare for sorting
+int compareDesc(const void *a, const void *b);
+
+// Returns nonzero if now - start >= timeoutMs
 int isTimeout(clock_t start, int timeoutMs);
+
+// Sets Solver non-input fields to the defaults
+void resetSolver(Solver *s);
 
 #endif
