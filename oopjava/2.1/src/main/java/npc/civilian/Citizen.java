@@ -1,7 +1,8 @@
 package npc.civilian;
 
 import npc.Enemy;
-import npc.Controllable;
+import npc.GameException;
+import npc.InvalidGameParameterException;
 
 public class Citizen extends Enemy implements Controllable {
     private static int count = 0;
@@ -10,22 +11,28 @@ public class Citizen extends Enemy implements Controllable {
     private int reputation;
     private boolean panicking = false;
 
-    public Citizen(String firstName, String lastName) {
+    public Citizen(String firstName, String lastName) throws InvalidGameParameterException {
         super(firstName, lastName);
         this.profession = "Unemployed";
         this.reputation = 0;
         count++;
     }
 
-    public Citizen(String firstName, String lastName, String profession) {
+    public Citizen(String firstName, String lastName, String profession) throws InvalidGameParameterException {
         super(firstName, lastName);
+        if (profession == null || profession.isEmpty()) {
+            throw new InvalidGameParameterException("Profession cannot be empty", "profession", profession);
+        }
         this.profession = profession;
         this.reputation = 0;
         count++;
     }
 
-    public Citizen(String firstName, String lastName, String profession, int x, int y) {
+    public Citizen(String firstName, String lastName, String profession, int x, int y) throws InvalidGameParameterException {
         super(firstName, lastName, x, y);
+        if (profession == null || profession.isEmpty()) {
+            throw new InvalidGameParameterException("Profession cannot be empty", "profession", profession);
+        }
         this.profession = profession;
         this.reputation = 0;
         count++;
@@ -60,12 +67,15 @@ public class Citizen extends Enemy implements Controllable {
         reputation = Math.max(-100, Math.min(100, reputation + amount));
     }
 
-    public void changeProfession(String proffesion) {
-        if (!proffesion.isEmpty()) this.profession = proffesion;
+    public void changeProfession(String profession) throws InvalidGameParameterException {
+        if (profession == null || profession.isEmpty()) {
+            throw new InvalidGameParameterException("Profession cannot be empty", "profession", profession);
+        }
+        this.profession = profession;
     }
 
     @Override
-    public void takeDamage(int damage) {
+    public void takeDamage(int damage) throws GameException {
         super.takeDamage(damage);
         if (isAlive()) {
             panicking = true;

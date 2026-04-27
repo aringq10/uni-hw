@@ -13,14 +13,26 @@ public abstract class Enemy implements Movable {
     private static int nextId = 0;
     private static int count = 0;
 
-    public Enemy(String firstName, String lastName) {
+    public Enemy(String firstName, String lastName) throws InvalidGameParameterException {
+        if (firstName == null || firstName.isEmpty()) {
+            throw new InvalidGameParameterException("First name cannot be empty", "firstName", firstName);
+        }
+        if (lastName == null || lastName.isEmpty()) {
+            throw new InvalidGameParameterException("Last name cannot be empty", "lastName", lastName);
+        }
         this.firstName = firstName;
         this.lastName = lastName;
         id = nextId;
         nextId++; count++;
     }
 
-    public Enemy(String firstName, String lastName, int x, int y) {
+    public Enemy(String firstName, String lastName, int x, int y) throws InvalidGameParameterException {
+        if (firstName == null || firstName.isEmpty()) {
+            throw new InvalidGameParameterException("First name cannot be empty", "firstName", firstName);
+        }
+        if (lastName == null || lastName.isEmpty()) {
+            throw new InvalidGameParameterException("Last name cannot be empty", "lastName", lastName);
+        }
         this.firstName = firstName;
         this.lastName = lastName;
         this.x = x;
@@ -57,24 +69,44 @@ public abstract class Enemy implements Movable {
         this.y = y;
     }
 
-    public void setHealth(int healthPoints) {
-        if (healthPoints < 0 || healthPoints > maxHealth) return;
+    public void setHealth(int healthPoints) throws InvalidGameParameterException {
+        if (healthPoints < 0 || healthPoints > maxHealth) {
+            throw new InvalidGameParameterException(
+                "Health must be between 0 and " + maxHealth, "healthPoints", healthPoints);
+        }
         health = healthPoints;
     }
 
-    public void heal(int healthPoints) {
-        if (!isAlive() || healthPoints < 0) return;
+    public void heal(int healthPoints) throws GameException {
+        if (!isAlive()) {
+            throw new GameException("Cannot heal a dead character");
+        }
+        if (healthPoints < 0) {
+            throw new InvalidGameParameterException("Heal amount cannot be negative", "healthPoints", healthPoints);
+        }
         setHealth(Math.min(health + healthPoints, maxHealth));
     }
 
-    public void takeDamage(int damage) {
-        if (!isAlive() || damage < 0) return;
+    public void takeDamage(int damage) throws GameException {
+        if (!isAlive()) {
+            throw new GameException("Cannot damage a dead character");
+        }
+        if (damage < 0) {
+            throw new InvalidGameParameterException("Damage cannot be negative", "damage", damage);
+        }
         health -= Math.min(damage, health);
     }
 
-    public final void takeDamage(int damage, double multiplier) {
-        if (!isAlive() || damage < 0 || multiplier < 0) return;
-
+    public final void takeDamage(int damage, double multiplier) throws GameException {
+        if (!isAlive()) {
+            throw new GameException("Cannot damage a dead character");
+        }
+        if (damage < 0) {
+            throw new InvalidGameParameterException("Damage cannot be negative", "damage", damage);
+        }
+        if (multiplier < 0) {
+            throw new InvalidGameParameterException("Multiplier cannot be negative", "multiplier", multiplier);
+        }
         int totalDamage = (int)(damage * multiplier);
         takeDamage(totalDamage);
     }
