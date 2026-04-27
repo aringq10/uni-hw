@@ -1,8 +1,13 @@
 package npc.civilian;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import npc.Enemy;
 import npc.GameException;
 import npc.InvalidGameParameterException;
+import npc.Controllable;
 
 public class Citizen extends Enemy implements Controllable {
     private static int count = 0;
@@ -10,6 +15,7 @@ public class Citizen extends Enemy implements Controllable {
     private String profession;
     private int reputation;
     private boolean panicking = false;
+    private List<String> inventory = new ArrayList<>();
 
     public Citizen(String firstName, String lastName) throws InvalidGameParameterException {
         super(firstName, lastName);
@@ -45,6 +51,15 @@ public class Citizen extends Enemy implements Controllable {
     public int getReputation() { return reputation; }
 
     public boolean isPanicking() { return panicking; }
+
+    public List<String> getInventory() { return Collections.unmodifiableList(inventory); }
+
+    public void addItem(String item) throws InvalidGameParameterException {
+        if (item == null || item.isEmpty()) {
+            throw new InvalidGameParameterException("Item cannot be empty", "item", item);
+        }
+        inventory.add(item);
+    }
 
     public void moveUp() {
         move(0, 1);
@@ -91,6 +106,15 @@ public class Citizen extends Enemy implements Controllable {
         return super.toString() +
                " prof: " + profession +
                " rep: " + reputation +
-               " panic: " + panicking;
+               " panic: " + panicking +
+               " inv: " + inventory;
+    }
+
+    @Override
+    public Citizen clone() {
+        Citizen copy = (Citizen) super.clone();
+        copy.inventory = new ArrayList<>(this.inventory);
+        count++;
+        return copy;
     }
 }

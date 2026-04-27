@@ -58,4 +58,11 @@ public class Officer extends Enemy {
     public String toString() {
         return super.toString() + " armor: " + getArmor();
     }
+
+    @Override
+    public Officer clone() {
+        Officer copy = (Officer) super.clone();
+        count++;
+        return copy;
+    }
 }

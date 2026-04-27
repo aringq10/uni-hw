@@ -1,6 +1,6 @@
 package npc;
 
-public abstract class Enemy implements Movable {
+public abstract class Enemy implements Movable, Cloneable {
     protected boolean alive = true;
     protected int x = 0;
     protected int y = 0;
@@ -112,7 +112,19 @@ public abstract class Enemy implements Movable {
     }
 
     public String toString() {
-        return getFirstName() + " " + getLastName() +
+        return "#" + getId() + " " + getFirstName() + " " + getLastName() +
                " x: " + getX() + " y: " + getY() + " hp: " + getHealth();
+    }
+
+    @Override
+    public Enemy clone() {
+        try {
+            Enemy copy = (Enemy) super.clone();
+            copy.id = nextId++;
+            count++;
+            return copy;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError("Enemy implements Cloneable", e);
+        }
     }
 }
