@@ -1,7 +1,8 @@
-#ifndef TRANSLATOR_H
-#define TRANSLATOR_H
+#pragma once
 
 #include <string>
+#include <fstream>
+#include <unordered_set>
 
 enum CommandType {
     C_ARITHMETIC,
@@ -15,32 +16,31 @@ enum CommandType {
     C_CALL,
 };
 
-class Parser {
-    private:
-        std::string fileName;
-        CommandType commandType;
-        std::string arg1;
-        int arg2;
-
-    public:
-        Parser(const std::string& src);
-        ~Parser();
-        void advance();
-        CommandType getCommandType();
-        std::string getArg1();
-        int getArg2();
+struct Command {
+    CommandType type;
+    std::string arg_1;
+    int arg_2;
 };
 
-class CodeWriter {
+class parser {
     private:
-        std::string fileName;
+        static constexpr size_t LINE_LIMIT = 256;
+        std::string line;
+        std::ifstream file;
+        Command parse_command();
 
     public:
-        CodeWriter(const std::string& dst);
-        ~CodeWriter();
-        void setFileName(const std::string& dst);
-        void writeArithmetic(const std::string& cmd);
-        void writePushPop(const CommandType cmdType, const std::string& segment, const int index);
+        parser(const std::string& src);
+        bool next_command(Command& c, size_t& line_num);
 };
 
-#endif
+class code_writer {
+    private:
+        std::ofstream file;
+
+    public:
+        code_writer(const std::string& dst);
+        void set_file_name(const std::string& dst);
+        void write_arithmetic(const std::string& command);
+        void write_push_pop(const CommandType command_type, const std::string& segment, const int index);
+};
