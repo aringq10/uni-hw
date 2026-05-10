@@ -1,4 +1,5 @@
 #include "utils.h"
+#include <cstddef>
 #include <filesystem>
 
 std::vector<std::string> gather_files(const char* path) {

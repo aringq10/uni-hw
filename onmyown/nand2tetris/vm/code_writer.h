@@ -1,0 +1,24 @@
+#pragma once
+
+#include "parser.h"
+#include <span>
+#include <string>
+#include <fstream>
+
+class code_writer {
+    private:
+        std::ofstream file;
+        std::string src_filename;
+        size_t compare_label_count = 0;
+
+        void write_lines(std::span<const char*> lines);
+        void check_write();
+        void write_compare(const char* jump);
+        void write_load_base_address(const std::string& segment, const size_t index);
+
+    public:
+        code_writer(const std::string& dst);
+        void set_file_name(const std::string& dst);
+        void write_arithmetic(const Command& command);
+        void write_push_pop(const Command& command);
+};
