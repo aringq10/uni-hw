@@ -1,3 +1,3 @@
 #!/bin/bash
 mkdir -p target/classes
-javac -d target/classes src/main/java/npc/*.java src/main/java/npc/**/*.java src/main/java/Game.java && java -cp target/classes Game
+find src/main/java -name '*.java' -print0 | xargs -0 javac -d target/classes && java -cp target/classes Game
