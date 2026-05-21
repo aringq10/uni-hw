@@ -5,6 +5,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <exception>
 #include <filesystem>
 #include <stdexcept>
 #include <string>
@@ -22,7 +23,7 @@ int main(int argc, char** argv) {
 
     try {
          files = gather_files(argv[1]);
-    } catch (std::runtime_error& e) {
+    } catch (std::exception& e) {
         fprintf(stderr, "%s\n", e.what());
         return 1;
     } catch (...) {
@@ -61,17 +62,17 @@ int main(int argc, char** argv) {
                             break;
                     }
                 }
-            } catch (SyntaxError& e) {
-                throw ParseError(filename + ":" + std::to_string(line_num) + ": error: " + e.what() + "\n    " + line);
             } catch (LineTooLongError& e) {
                 throw ParseError(filename + ":" + std::to_string(line_num) + ": error: " + e.what());
+            } catch (ParseError& e) {
+                throw ParseError(filename + ":" + std::to_string(line_num) + ": error: " + e.what() + "\n    " + line);
             }
         }
     } catch (ParseError& e) {
         fprintf(stderr, "%s\n", e.what());
         return 1;
-    } catch (std::runtime_error& e) {
-        fprintf(stderr, "Runtime error: %s\n", e.what());
+    } catch (std::exception& e) {
+        fprintf(stderr, "Exception thrown: %s\n", e.what());
         return 1;
     } catch (...) {
         fprintf(stderr, "Unknown error");
