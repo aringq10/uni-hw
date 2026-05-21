@@ -11,11 +11,9 @@ public class GameState implements Serializable {
 
     public final List<Enemy> activeEnemies;
     public final EnemyPrototypeRegistry registry;
-    public final long savedAtMillis;
 
     public GameState(List<Enemy> activeEnemies, EnemyPrototypeRegistry registry) {
         this.activeEnemies = activeEnemies;
         this.registry = registry;
-        this.savedAtMillis = System.currentTimeMillis();
     }
 }

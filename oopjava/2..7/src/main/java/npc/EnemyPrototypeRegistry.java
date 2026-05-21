@@ -20,4 +20,12 @@ public class EnemyPrototypeRegistry implements Serializable {
     public int size() {
         return prototypes.size();
     }
+
+    @Override
+    public String toString() {
+        if (prototypes.isEmpty()) return "{}";
+        StringBuilder sb = new StringBuilder();
+        prototypes.forEach((k, v) -> sb.append("\n  ").append(k).append(" -> ").append(v));
+        return sb.toString();
+    }
 }

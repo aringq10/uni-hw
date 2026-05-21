@@ -8,8 +8,7 @@ public abstract class Enemy implements Cloneable, Serializable {
 
     protected int x = 0;
     protected int y = 0;
-    protected int maxHealth = 100;
-    protected int health = maxHealth;
+    protected int health = 100;
     protected String firstName;
     protected String lastName;
     private int id;
@@ -21,11 +20,6 @@ public abstract class Enemy implements Cloneable, Serializable {
     }
 
     public boolean isAlive() { return health > 0; }
-    public int getX() { return x; }
-    public int getY() { return y; }
-    public int getHealth() { return health; }
-    public String getFirstName() { return firstName; }
-    public String getLastName() { return lastName; }
     public int getId() { return id; }
 
     public void move(int dx, int dy) {
@@ -51,7 +45,7 @@ public abstract class Enemy implements Cloneable, Serializable {
             copy.id = nextId++;
             return copy;
         } catch (CloneNotSupportedException e) {
-            throw new AssertionError("Enemy implements Cloneable", e);
+            throw new AssertionError(e);
         }
     }
 }
