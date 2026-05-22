@@ -4,6 +4,32 @@
 #include <fstream>
 #include <unordered_map>
 
+struct ParseError : std::runtime_error {
+    using std::runtime_error::runtime_error;
+};
+
+struct SyntaxError : ParseError {
+    using ParseError::ParseError;
+};
+
+struct LineTooLongError : ParseError {
+    LineTooLongError(size_t cap)
+        : ParseError("line too long, cap is " + std::to_string(cap)) {}
+};
+
+struct TooManyArguments : ParseError {
+    TooManyArguments() : ParseError("too many arguments") {}
+};
+
+struct MissingArguments : ParseError {
+    MissingArguments() : ParseError("missing arguments") {}
+};
+
+struct MissingReturn : ParseError {
+    explicit MissingReturn(const std::string& name)
+        : ParseError("no return at end of subroutine '" + name + "'") {}
+};
+
 enum CommandType {
     C_ARITHMETIC,
     C_PUSH,
@@ -11,9 +37,9 @@ enum CommandType {
     C_LABEL,
     C_GOTO,
     C_IF,
+    C_CALL,
     C_FUNCTION,
     C_RETURN,
-    C_CALL,
 };
 
 enum class ArithmeticType { ADD, SUB, NEG, EQ, GT, LT, AND, OR, NOT };
@@ -56,11 +82,14 @@ class parser {
     private:
         static constexpr size_t LINE_LIMIT = 256;
         std::string line;
+        size_t line_num;
+        std::string current_function;
         std::ifstream file;
         Command parse_command();
 
     public:
         parser(const std::string& src);
         const std::string& get_line();
-        bool next_command(Command& c, size_t& line_num, std::string& line);
+        size_t get_line_num();
+        bool next_command(Command& c);
 };

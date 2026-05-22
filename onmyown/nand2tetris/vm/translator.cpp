@@ -1,10 +1,8 @@
 #include "parser.h"
 #include "code_writer.h"
 #include "utils.h"
-#include "errors.h"
 
 #include <cstdio>
-#include <cstring>
 #include <exception>
 #include <filesystem>
 #include <stdexcept>
@@ -38,15 +36,13 @@ int main(int argc, char** argv) {
             auto basename = std::filesystem::path(filepath).stem().string();
 
             code.set_file_name(basename);
-            size_t line_num = 0;
-            std::string line;
+
+            parser p = parser(filepath);
+
+            Command c;
 
             try {
-                parser p = parser(filepath);
-
-                Command c;
-
-                while (p.next_command(c, line_num, line)) {
+                while (p.next_command(c)) {
                     switch (c.type) {
                         case C_ARITHMETIC:
                             code.write_arithmetic(c);
@@ -57,15 +53,35 @@ int main(int argc, char** argv) {
                         case C_POP:
                             code.write_push_pop(c);
                             break;
+                        case C_LABEL:
+                            code.write_label(c);
+                            break;
+                        case C_GOTO:
+                            code.write_goto(c);
+                            break;
+                        case C_IF:
+                            code.write_if(c);
+                            break;
+                        case C_CALL:
+                            code.write_call(c);
+                            break;
+                        case C_FUNCTION:
+                            code.write_function(c);
+                            break;
+                        case C_RETURN:
+                            code.write_return();
+                            break;
                         default:
                             throw std::runtime_error("Unknown command type returned from parser");
                             break;
                     }
                 }
             } catch (LineTooLongError& e) {
-                throw ParseError(filename + ":" + std::to_string(line_num) + ": error: " + e.what());
+                throw ParseError(filename + ":" + std::to_string(p.get_line_num()) + ": error: " + e.what());
+            } catch (MissingReturn& e) {
+                throw ParseError(filename + ":" + std::to_string(p.get_line_num()) + ": error: " + e.what());
             } catch (ParseError& e) {
-                throw ParseError(filename + ":" + std::to_string(line_num) + ": error: " + e.what() + "\n    " + line);
+                throw ParseError(filename + ":" + std::to_string(p.get_line_num()) + ": error: " + e.what() + "\n    " + p.get_line());
             }
         }
     } catch (ParseError& e) {

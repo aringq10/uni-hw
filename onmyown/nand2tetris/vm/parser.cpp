@@ -1,6 +1,5 @@
 #include "parser.h"
 #include "utils.h"
-#include "errors.h"
 
 #include <sstream>
 #include <string>
@@ -31,12 +30,6 @@ static size_t get_number(const std::string& s) {
     }
 }
 
-parser::parser(const std::string& src) : file(src) {
-    if (!file.is_open()) {
-        throw std::runtime_error("Could not open file '" + src + "'");
-    }
-}
-
 Command parser::parse_command() {
     std::istringstream ss(line);
     std::string cmd, arg_1, arg_2, extra;
@@ -44,6 +37,10 @@ Command parser::parse_command() {
 
     if (ss >> extra) {
         throw TooManyArguments();
+    }
+
+    if (current_function.empty() && cmd != "function") {
+        throw SyntaxError("all commands must be inside subroutines");
     }
 
     if (ARITHMETIC_MAP.contains(cmd)) {
@@ -72,7 +69,7 @@ Command parser::parse_command() {
             throw MissingArguments();
         }
         validate_symbol(arg_1);
-        return Command({C_LABEL, arg_1, 0});
+        return Command({C_LABEL, current_function + "$" + arg_1, 0});
     } else if (cmd == "goto") {
         if (!arg_2.empty()) {
             throw TooManyArguments();
@@ -80,7 +77,7 @@ Command parser::parse_command() {
         if (arg_1.empty()) {
             throw MissingArguments();
         }
-        return Command({C_GOTO, arg_1, 0});
+        return Command({C_GOTO, current_function + "$" + arg_1, 0});
     } else if (cmd == "if-goto") {
         if (!arg_2.empty()) {
             throw TooManyArguments();
@@ -88,12 +85,16 @@ Command parser::parse_command() {
         if (arg_1.empty()) {
             throw MissingArguments();
         }
-        return Command({C_IF, arg_1, 0});
+        return Command({C_IF, current_function + "$" + arg_1, 0});
     } else if (cmd == "function") {
         if (arg_1.empty() || arg_2.empty()) {
             throw MissingArguments();
         }
         validate_symbol(arg_1);
+        if (!current_function.empty()) {
+            throw MissingReturn(current_function);
+        }
+        current_function = arg_1;
         return Command({C_FUNCTION, arg_1, get_number(arg_2)});
     } else if (cmd == "call") {
         if (arg_1.empty() || arg_2.empty()) {
@@ -104,22 +105,32 @@ Command parser::parse_command() {
         if (!arg_1.empty() || !arg_2.empty()) {
             throw TooManyArguments();
         }
-        return Command({C_RETURN, nullptr, 0});
+        current_function = "";
+        return Command({C_RETURN, "", 0});
     }
 
     throw SyntaxError("unknown command '" + cmd + "'");
+}
+
+parser::parser(const std::string& src) : line_num(0), file(src) {
+    if (!file.is_open()) {
+        throw std::runtime_error("Could not open file '" + src + "'");
+    }
 }
 
 const std::string& parser::get_line() {
     return line;
 }
 
-bool parser::next_command(Command& c, size_t& line_num, std::string& line_local) {
+size_t parser::get_line_num() {
+    return line_num;
+}
+
+bool parser::next_command(Command& c) {
     char buf[LINE_LIMIT];
     while (file.getline(buf, LINE_LIMIT)) {
         line_num++;
         line = buf;
-        line_local = line;
         remove_comment(line);
         trim(line);
         if (!line.empty()) {
@@ -129,12 +140,17 @@ bool parser::next_command(Command& c, size_t& line_num, std::string& line_local)
     }
 
     if (file.fail() && !file.eof()) {
-        line_local = buf;
+        line_num++;
+        line = buf;
         throw LineTooLongError(LINE_LIMIT);
     }
 
     if (file.bad()) {
         throw std::runtime_error("I/O error");
+    }
+
+    if (!current_function.empty()) {
+        throw MissingReturn(current_function);
     }
 
     return false;

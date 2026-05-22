@@ -19,6 +19,13 @@ class code_writer {
     public:
         code_writer(const std::string& dst);
         void set_file_name(const std::string& dst);
+        void write_init();
         void write_arithmetic(const Command& command);
         void write_push_pop(const Command& command);
+        void write_label(const Command& command);
+        void write_goto(const Command& command);
+        void write_if(const Command& command);
+        void write_call(const Command& command);
+        void write_function(const Command& command);
+        void write_return();
 };

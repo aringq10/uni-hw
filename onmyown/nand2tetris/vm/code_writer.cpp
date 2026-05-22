@@ -1,14 +1,5 @@
 #include "code_writer.h"
 #include "parser.h"
-#include "errors.h"
-
-void code_writer::set_file_name(const std::string& dst) {
-    src_filename = dst;
-}
-
-void code_writer::check_write() {
-    if (file.fail()) throw std::runtime_error("Write failed");
-}
 
 // M and D hold operators, M holds result
 static const char* LOAD_2_STACK_ASM[] = {
@@ -76,6 +67,10 @@ void code_writer::write_lines(std::span<const char*> lines) {
     }
 }
 
+void code_writer::check_write() {
+    if (file.fail()) throw std::runtime_error("Write failed");
+}
+
 void code_writer::write_compare(const char* jump) {
     int id = compare_label_count++;
     write_lines(LOAD_2_STACK_ASM);
@@ -84,36 +79,11 @@ void code_writer::write_compare(const char* jump) {
          << "@TRUE_" << id << "\n"
          << "D;" << jump << "\n"
          << "@SP\n" << "A=M-1\n" << "M=0\n"
-         << "@END_" << id << "\n"
+         << "@FALSE_" << id << "\n"
          << "0;JMP\n"
          << "(TRUE_" << id << ")\n"
          << "@SP\n" << "A=M-1\n" << "M=-1\n"
-         << "(END_" << id << ")\n";
-}
-
-code_writer::code_writer(const std::string& dst) : file(dst) {
-    if (!file.is_open()) {
-        throw std::runtime_error("Could not open file '" + dst + "'");
-    }
-}
-void code_writer::write_arithmetic(const Command& command) {
-    auto it = ARITHMETIC_MAP.find(command.arg_1);
-    if (it == ARITHMETIC_MAP.end())
-        throw SyntaxError("unknown arithmetic command '" + command.arg_1 + "'");
-
-    switch (it->second) {
-        case ArithmeticType::ADD: write_lines(LOAD_2_STACK_ASM); write_lines(ADD_ASM); break;
-        case ArithmeticType::SUB: write_lines(LOAD_2_STACK_ASM); write_lines(SUB_ASM); break;
-        case ArithmeticType::NEG: write_lines(LOAD_1_STACK_ASM); write_lines(NEG_ASM); break;
-        case ArithmeticType::EQ:  write_compare("JEQ"); break;
-        case ArithmeticType::GT:  write_compare("JGT"); break;
-        case ArithmeticType::LT:  write_compare("JLT"); break;
-        case ArithmeticType::AND: write_lines(LOAD_2_STACK_ASM); write_lines(AND_ASM); break;
-        case ArithmeticType::OR:  write_lines(LOAD_2_STACK_ASM); write_lines(OR_ASM);  break;
-        case ArithmeticType::NOT: write_lines(LOAD_1_STACK_ASM); write_lines(NOT_ASM); break;
-    }
-
-    check_write();
+         << "(FALSE_" << id << ")\n";
 }
 
 // loads address of push/pop operation into register A
@@ -149,6 +119,41 @@ void code_writer::write_load_base_address(const std::string& segment, const size
     }
 }
 
+/* PUBLIC METHODS */
+
+code_writer::code_writer(const std::string& dst) : file(dst) {
+    if (!file.is_open()) {
+        throw std::runtime_error("Could not open file '" + dst + "'");
+    }
+}
+
+void code_writer::set_file_name(const std::string& dst) {
+    src_filename = dst;
+}
+
+void code_writer::write_init() {
+}
+
+void code_writer::write_arithmetic(const Command& command) {
+    auto it = ARITHMETIC_MAP.find(command.arg_1);
+    if (it == ARITHMETIC_MAP.end())
+        throw SyntaxError("unknown arithmetic command '" + command.arg_1 + "'");
+
+    switch (it->second) {
+        case ArithmeticType::ADD: write_lines(LOAD_2_STACK_ASM); write_lines(ADD_ASM); break;
+        case ArithmeticType::SUB: write_lines(LOAD_2_STACK_ASM); write_lines(SUB_ASM); break;
+        case ArithmeticType::NEG: write_lines(LOAD_1_STACK_ASM); write_lines(NEG_ASM); break;
+        case ArithmeticType::EQ:  write_compare("JEQ"); break;
+        case ArithmeticType::GT:  write_compare("JGT"); break;
+        case ArithmeticType::LT:  write_compare("JLT"); break;
+        case ArithmeticType::AND: write_lines(LOAD_2_STACK_ASM); write_lines(AND_ASM); break;
+        case ArithmeticType::OR:  write_lines(LOAD_2_STACK_ASM); write_lines(OR_ASM);  break;
+        case ArithmeticType::NOT: write_lines(LOAD_1_STACK_ASM); write_lines(NOT_ASM); break;
+    }
+
+    check_write();
+}
+
 void code_writer::write_push_pop(const Command& command) {
     std::string segment = command.arg_1;
     size_t index = command.arg_2;
@@ -180,4 +185,22 @@ void code_writer::write_push_pop(const Command& command) {
     }
 
     check_write();
+}
+
+void code_writer::write_label(const Command& command) {
+}
+
+void code_writer::write_goto(const Command& command) {
+}
+
+void code_writer::write_if(const Command& command) {
+}
+
+void code_writer::write_call(const Command& command) {
+}
+
+void code_writer::write_function(const Command& command) {
+}
+
+void code_writer::write_return() {
 }
