@@ -188,19 +188,38 @@ void code_writer::write_push_pop(const Command& command) {
 }
 
 void code_writer::write_label(const Command& command) {
+    file << "(" << command.arg_1 << ")\n";
+    check_write();
 }
 
+// Bug: if this is the label's first definition, the assembler
+// sees it as a variable and doesn't throw an error
 void code_writer::write_goto(const Command& command) {
+    file << "@" << command.arg_1 << "\n" << "0;JMP\n";
+    check_write();
 }
 
 void code_writer::write_if(const Command& command) {
+    write_push_pop({C_PUSH, "constant", 0});
+    write_arithmetic({C_ARITHMETIC, "eq", 0});
+    int id = compare_label_count++;
+    file << "D=M\n"
+         << "@FALSE_" << id << "\n"
+         << "D;JEQ\n"
+         << "@" << command.arg_1 << "\n"
+         << "0;JMP\n"
+         << "(FALSE_" << id << ")\n";
+    check_write();
 }
 
 void code_writer::write_call(const Command& command) {
+    check_write();
 }
 
 void code_writer::write_function(const Command& command) {
+    check_write();
 }
 
 void code_writer::write_return() {
+    check_write();
 }
