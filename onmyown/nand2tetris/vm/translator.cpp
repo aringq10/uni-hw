@@ -29,8 +29,16 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    std::filesystem::path p(argv[1]);
+    bool is_dir = std::filesystem::is_directory(p);
+
     try {
         code_writer code = code_writer(output_file);
+
+        if (is_dir) {
+            code.write_init();
+        }
+
         for (const auto& filepath : files) {
             auto filename = std::filesystem::path(filepath).filename().string();
             auto basename = std::filesystem::path(filepath).stem().string();
@@ -40,8 +48,6 @@ int main(int argc, char** argv) {
             parser p = parser(filepath);
 
             Command c;
-
-            code.write_init();
 
             try {
                 while (p.next_command(c)) {
@@ -79,8 +85,6 @@ int main(int argc, char** argv) {
                     }
                 }
             } catch (LineTooLongError& e) {
-                throw ParseError(filename + ":" + std::to_string(p.get_line_num()) + ": error: " + e.what());
-            } catch (MissingReturn& e) {
                 throw ParseError(filename + ":" + std::to_string(p.get_line_num()) + ": error: " + e.what());
             } catch (ParseError& e) {
                 throw ParseError(filename + ":" + std::to_string(p.get_line_num()) + ": error: " + e.what() + "\n    " + p.get_line());

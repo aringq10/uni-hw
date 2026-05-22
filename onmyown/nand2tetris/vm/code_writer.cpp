@@ -72,7 +72,7 @@ void code_writer::check_write() {
 }
 
 void code_writer::write_compare(const char* jump) {
-    int id = compare_label_count++;
+    size_t id = compare_label_count++;
     write_lines(LOAD_2_STACK_ASM);
     write_lines(SUB_ASM);
     file << "D=M\n"

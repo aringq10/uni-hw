@@ -39,10 +39,6 @@ Command parser::parse_command() {
         throw TooManyArguments();
     }
 
-    if (current_function.empty() && cmd != "function") {
-        throw SyntaxError("all commands must be inside subroutines");
-    }
-
     if (ARITHMETIC_MAP.contains(cmd)) {
         if (!arg_1.empty() || !arg_2.empty()) {
             throw TooManyArguments();
@@ -69,7 +65,8 @@ Command parser::parse_command() {
             throw MissingArguments();
         }
         validate_symbol(arg_1);
-        return Command({C_LABEL, current_function + "$" + arg_1, 0});
+        std::string label = current_function.empty() ? arg_1 : current_function + "$" + arg_1;
+        return Command({C_LABEL, label, 0});
     } else if (cmd == "goto") {
         if (!arg_2.empty()) {
             throw TooManyArguments();
@@ -77,7 +74,8 @@ Command parser::parse_command() {
         if (arg_1.empty()) {
             throw MissingArguments();
         }
-        return Command({C_GOTO, current_function + "$" + arg_1, 0});
+        std::string label = current_function.empty() ? arg_1 : current_function + "$" + arg_1;
+        return Command({C_GOTO, label, 0});
     } else if (cmd == "if-goto") {
         if (!arg_2.empty()) {
             throw TooManyArguments();
@@ -85,15 +83,13 @@ Command parser::parse_command() {
         if (arg_1.empty()) {
             throw MissingArguments();
         }
-        return Command({C_IF, current_function + "$" + arg_1, 0});
+        std::string label = current_function.empty() ? arg_1 : current_function + "$" + arg_1;
+        return Command({C_IF, label, 0});
     } else if (cmd == "function") {
         if (arg_1.empty() || arg_2.empty()) {
             throw MissingArguments();
         }
         validate_symbol(arg_1);
-        if (!current_function.empty()) {
-            throw MissingReturn(current_function);
-        }
         current_function = arg_1;
         return Command({C_FUNCTION, arg_1, get_number(arg_2)});
     } else if (cmd == "call") {
@@ -147,10 +143,6 @@ bool parser::next_command(Command& c) {
 
     if (file.bad()) {
         throw std::runtime_error("I/O error");
-    }
-
-    if (!current_function.empty()) {
-        throw MissingReturn(current_function);
     }
 
     return false;

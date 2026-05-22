@@ -25,11 +25,6 @@ struct MissingArguments : ParseError {
     MissingArguments() : ParseError("missing arguments") {}
 };
 
-struct MissingReturn : ParseError {
-    explicit MissingReturn(const std::string& name)
-        : ParseError("no return at end of subroutine '" + name + "'") {}
-};
-
 enum CommandType {
     C_ARITHMETIC,
     C_PUSH,
