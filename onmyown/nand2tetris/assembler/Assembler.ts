@@ -14,7 +14,7 @@ type Instruction =
   | { type: "L"; line: number, label: string };
 
 function printUsage(): void {
-    console.log(`Usage: node ${programName} file`)
+    console.log(`Usage: node ${programName} src.asm [dst.hack]`)
 }
 
 function err(line: number, type: string, msg: string): never {
@@ -326,9 +326,9 @@ if (!process.argv[2]) {
     process.exit(0);
 }
 
-const filePath: string = process.argv[2];
-const outputFile = path.basename(changeExtension(filePath, ".hack"));
+const srcPath: string = process.argv[2];
+const outputPath = process.argv[3] ?? path.basename(changeExtension(srcPath, ".hack"));
 
-const lines = fs.readFileSync(filePath, "utf8").split("\n");
+const lines = fs.readFileSync(srcPath, "utf8").split("\n");
 const instructions = assemble(lines);
-fs.writeFileSync(outputFile, instructions.join('\n'), 'utf8');
+fs.writeFileSync(outputPath, instructions.join('\n'), 'utf8');
