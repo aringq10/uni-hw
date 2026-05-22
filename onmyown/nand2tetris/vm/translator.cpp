@@ -41,6 +41,8 @@ int main(int argc, char** argv) {
 
             Command c;
 
+            code.write_init();
+
             try {
                 while (p.next_command(c)) {
                     switch (c.type) {

@@ -132,6 +132,12 @@ void code_writer::set_file_name(const std::string& dst) {
 }
 
 void code_writer::write_init() {
+    file << "@256\n"
+         << "D=A\n"
+         << "@SP\n"
+         << "M=D\n";
+    write_call({C_CALL, "Sys.init", 0});
+    check_write();
 }
 
 void code_writer::write_arithmetic(const Command& command) {
@@ -192,34 +198,132 @@ void code_writer::write_label(const Command& command) {
     check_write();
 }
 
-// Bug: if this is the label's first definition, the assembler
-// sees it as a variable and doesn't throw an error
+// Limitation of "goto" and "if-goto" commands: if this is the label's first
+// definition, the assembler sees it as a variable and doesn't throw an error
 void code_writer::write_goto(const Command& command) {
     file << "@" << command.arg_1 << "\n" << "0;JMP\n";
     check_write();
 }
 
 void code_writer::write_if(const Command& command) {
-    write_push_pop({C_PUSH, "constant", 0});
-    write_arithmetic({C_ARITHMETIC, "eq", 0});
-    int id = compare_label_count++;
-    file << "D=M\n"
-         << "@FALSE_" << id << "\n"
-         << "D;JEQ\n"
+    file << "@SP\n"
+         << "AM=M-1\n"
+         << "D=M\n"
          << "@" << command.arg_1 << "\n"
-         << "0;JMP\n"
-         << "(FALSE_" << id << ")\n";
+         << "D;JNE\n";
     check_write();
 }
 
 void code_writer::write_call(const Command& command) {
+    size_t id = retaddr_label_count++;
+    file << "@RETURN_" << id << "\n"
+         << "D=A\n";
+    write_lines(PUSH_STACK_ASM);
+    file << "@LCL\n"
+         << "D=M\n";
+    write_lines(PUSH_STACK_ASM);
+    file << "@ARG\n"
+         << "D=M\n";
+    write_lines(PUSH_STACK_ASM);
+    file << "@THIS\n"
+         << "D=M\n";
+    write_lines(PUSH_STACK_ASM);
+    file << "@THAT\n"
+         << "D=M\n";
+    write_lines(PUSH_STACK_ASM);
+    file << "@SP\n"
+         << "D=M\n"
+         << "@5\n"
+         << "D=D-A\n"
+         << "@" << command.arg_2 << "\n"
+         << "D=D-A\n"
+         << "@ARG\n"
+         << "M=D\n"; // new ARG value is set up
+    file << "@SP\n"
+         << "D=M\n"
+         << "@LCL\n"
+         << "M=D\n"; // new LCL value is set up
+    file << "@" << command.arg_1 << "\n"
+         << "0;JMP\n";
+    file << "(RETURN_" << id << ")" << "\n";
     check_write();
 }
 
 void code_writer::write_function(const Command& command) {
+    size_t id = func_loop_label_count++;
+    file << "(" << command.arg_1 << ")\n";
+    file << "@" << command.arg_2 << "\n"
+         << "D=A\n"
+         << "(FUNC_LOOP_" << id << ")\n"
+         << "@FUNC_LOOP_END_" << id << "\n"
+         << "D;JEQ\n"
+         << "@SP\n"
+         << "A=M\n"
+         << "M=0\n"
+         << "@SP\n"
+         << "M=M+1\n"
+         << "D=D-1\n"
+         << "@FUNC_LOOP_" << id << "\n"
+         << "0;JMP\n"
+         << "(FUNC_LOOP_END_" << id << ")\n";
     check_write();
 }
 
 void code_writer::write_return() {
+    // save LCL value to R15, return address to R14,
+    // reposition return value and fix SP for caller
+    file << "@LCL\n"
+         << "D=M\n"
+         << "@R15\n" // R15 holds pointer to LCL
+         << "M=D\n";
+    file << "@LCL\n"
+         << "D=M\n"
+         << "@5\n"
+         << "A=D-A\n"
+         << "D=M\n"
+         << "@R14\n"
+         << "M=D\n" // R14 holds return address
+         << "@ARG\n"
+         << "A=M\n";
+    write_lines(POP_STACK_ASM); // reposition return value for caller
+    file << "@ARG\n"
+         << "D=M+1\n"
+         << "@SP\n"
+         << "M=D\n"; // SP = ARG + 1
+
+    // restore segments
+    file << "@R15\n"
+         << "D=M\n"
+         << "@1\n"
+         << "A=D-A\n"
+         << "D=M\n" // D holds THAT
+         << "@THAT\n"
+         << "M=D\n"; // THAT restored
+    file << "@R15\n"
+         << "D=M\n"
+         << "@2\n"
+         << "A=D-A\n"
+         << "D=M\n" // D holds THIS
+         << "@THIS\n"
+         << "M=D\n"; // THIS restored
+    file << "@R15\n"
+         << "D=M\n"
+         << "@3\n"
+         << "A=D-A\n"
+         << "D=M\n" // D holds ARG
+         << "@ARG\n"
+         << "M=D\n"; // ARG restored
+    file << "@R15\n"
+         << "D=M\n"
+         << "@4\n"
+         << "A=D-A\n"
+         << "D=M\n" // D holds LCL
+         << "@LCL\n"
+         << "M=D\n"; // LCL restored
+
+    // goto return address
+    file << "@R14\n"
+         << "A=M\n" // A holds return address
+         << "0;JMP\n";
     check_write();
 }

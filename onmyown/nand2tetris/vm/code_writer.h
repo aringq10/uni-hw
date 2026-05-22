@@ -10,6 +10,8 @@ class code_writer {
         std::ofstream file;
         std::string src_filename;
         size_t compare_label_count = 0;
+        size_t retaddr_label_count = 0;
+        size_t func_loop_label_count = 0;
 
         void write_lines(std::span<const char*> lines);
         void check_write();
