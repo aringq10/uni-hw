@@ -10,6 +10,16 @@ import npc.io.GameState;
 import npc.io.StateManager;
 import npc.law.Officer;
 
+/**
+ * REPL entry point for the NPC manager. Holds the live
+ * {@link List} of {@link Enemy} instances and the
+ * {@link EnemyPrototypeRegistry}, and dispatches user commands
+ * (add / damage / move / register / spawn / save / load / print).
+ *
+ * <p>Plays the <b>Originator</b> role in the Memento pattern by
+ * handing its state to {@link StateManager} as a {@link GameState}
+ * snapshot.
+ */
 public class Game {
     private static final Path SAVE_PATH = Path.of("save.bin");
     private static final StateManager sm = new StateManager();
@@ -17,6 +27,13 @@ public class Game {
     private static List<Enemy> enemies = new ArrayList<>();
     private static EnemyPrototypeRegistry registry = new EnemyPrototypeRegistry();
 
+    /**
+     * Starts the REPL. Reads whitespace-separated commands from stdin
+     * until {@code quit}/{@code exit} or EOF.
+     *
+     * @param args ignored
+     * @throws Exception propagates unexpected errors from save/load workers
+     */
     public static void main(String[] args) throws Exception {
         printHelp();
         Scanner in = new Scanner(System.in);
