@@ -6,6 +6,3 @@ graph.o : graph.c graph.h Deque.h
 
 Deque.o : Deque.c Deque.h
 	gcc -c -std=c99 -Wall Deque.c
-
-clean :
-	rm -f *.o programa.exe programa result*.txt data*.txt
