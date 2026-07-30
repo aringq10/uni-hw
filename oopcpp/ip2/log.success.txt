@@ -1,0 +1,45 @@
+==========================================
+TRIE PROJECT DIAGNOSTIC TEST SUITE
+==========================================
+TEST: Size after 2 insertions -> PASSED
+Caught expected TrieException: Trie Error: Attempted to insert existing word 'test'.
+TEST: Duplicate insertion protection -> PASSED
+Caught expected invalid_argument: Trie does not support empty strings.
+TEST: Empty string protection -> PASSED
+TEST: Size after removal -> PASSED
+TEST: Contains removed word -> PASSED
+TEST: Copy equals original -> PASSED
+TEST: Deep copy persistence after original deletion -> PASSED
+TEST: Lexicographical comparison (apple < banana) -> PASSED
+TEST: Edit replaces old word -> PASSED
+TEST: Edit inserts new word -> PASSED
+TEST: Size unchanged after edit -> PASSED
+TEST: operator%= replaces old word -> PASSED
+TEST: operator%= inserts new word -> PASSED
+TEST: Edit nonexistent word throws -> PASSED
+TEST: Edit to existing word throws -> PASSED
+--- Stress Testing Internal Node Integrity ---
+Logged insertion of node: alpha [OK]
+Logged insertion of node: beta [OK]
+Logged insertion of node: gamma [OK]
+Logged insertion of node: delta [OK]
+Logged insertion of node: epsilon [OK]
+Logged insertion of node: zeta [OK]
+Logged insertion of node: eta [OK]
+Logged insertion of node: theta [OK]
+TEST: Final state check -> PASSED
+TEST: toString returns correct contents -> PASSED
+Final Trie Structure Contents:
+alpha
+beta
+delta
+epsilon
+eta
+gamma
+tango
+testing
+theta
+zeta
+==========================================
+ALL TESTS PASSED
+==========================================
