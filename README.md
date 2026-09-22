@@ -13,3 +13,4 @@
 
 ### Semester 3
 * ```db``` - database management systems <br>
+* ```swe``` - software engineering <br>
