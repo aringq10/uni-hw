@@ -1,5 +1,7 @@
+-- (1)
 SELECT SUBSTRING(pavarde, 1, 1) FROM stud.skaitytojas;
 
+-- JOIN
 SELECT DISTINCT s.vardas, s.pavarde, k.isbn, k.pavadinimas
   FROM stud.skaitytojas AS s
   JOIN stud.skaitymas AS s2
@@ -9,8 +11,7 @@ SELECT DISTINCT s.vardas, s.pavarde, k.isbn, k.pavadinimas
   JOIN stud.knyga AS k
     ON e.isbn=k.isbn
 
--- Vardai ir pavardės visų skaitytojų, kurie skaito bent vieną konkretaus autoriaus, nurodyto vardu ir pavarde, knygą.
-
+-- (2) Vardai ir pavardės visų skaitytojų, kurie skaito bent vieną konkretaus autoriaus, nurodyto vardu ir pavarde, knygą.
 SELECT DISTINCT skt.vardas, skt.pavarde
   FROM stud.skaitytojas AS skt
   JOIN stud.skaitymas AS skm
@@ -22,6 +23,7 @@ SELECT DISTINCT skt.vardas, skt.pavarde
   WHERE k.isbn
     IN (SELECT isbn FROM stud.autorius WHERE vardas='Jonas' AND pavarde='Petraitis');
 
+-- to_date, to_char, to_number
 SELECT isbn, gavimo_data
   FROM stud.egzempliorius
   WHERE gavimo_data > to_date('2020', 'YYYY');
@@ -30,10 +32,12 @@ SELECT pavadinimas, to_char(verte, '99999999D9999') AS verte
   FROM stud.knyga
   WHERE verte > to_number('20.2', '99D9');
 
+-- NULLIF
 SELECT pavadinimas, verte
   FROM stud.knyga
   WHERE NULLIF(verte, to_number('19.9', '99D9')) IS NOT NULL;
 
+-- COUNT, CASE WHEN
 SELECT vardas, pavarde,
   COUNT(CASE WHEN skm.grazinta IS NULL
         THEN skm.nr END) AS "grazinti skaitymai",
@@ -43,14 +47,17 @@ SELECT vardas, pavarde,
   WHERE skt.nr=skm.skaitytojas
   GROUP BY skt.nr;
 
+-- IN(), LIKE, AND, OR
 SELECT vardas, pavarde, adresas
   FROM stud.skaitytojas
   WHERE vardas IN ('Jonas', 'Petras') AND (adresas LIKE '%Lenktoji%' OR adresas LIKE '%Mazoji%');
 
+-- COALESCE
 SELECT vardas, pavarde,
   COALESCE(adresas, 'BENAMIS') AS adresas
   FROM stud.skaitytojas;
 
+-- self join
 SELECT A.vardas AS "A vardas", A.pavarde AS "A pavarde",
   B.vardas AS "B vardas", B.pavarde
   FROM stud.skaitytojas AS A, stud.skaitytojas AS B
