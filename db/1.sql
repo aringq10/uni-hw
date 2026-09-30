@@ -1,27 +1,6 @@
 -- (1)
 SELECT SUBSTRING(pavarde, 1, 1) FROM stud.skaitytojas;
 
--- JOIN
-SELECT DISTINCT s.vardas, s.pavarde, k.isbn, k.pavadinimas
-  FROM stud.skaitytojas AS s
-  JOIN stud.skaitymas AS s2
-    ON (s.nr=s2.skaitytojas AND s2.grazinta IS NULL)
-  JOIN stud.egzempliorius AS e
-    ON s2.egzempliorius=e.nr
-  JOIN stud.knyga AS k
-    ON e.isbn=k.isbn
-
--- (2) Vardai ir pavardės visų skaitytojų, kurie skaito bent vieną konkretaus autoriaus, nurodyto vardu ir pavarde, knygą.
-SELECT DISTINCT skt.vardas, skt.pavarde
-  FROM stud.skaitytojas AS skt
-  JOIN stud.skaitymas AS skm
-    ON (skt.nr=skm.skaitytojas AND skm.grazinta IS NULL)
-  JOIN stud.egzempliorius AS e
-    ON skm.egzempliorius=e.nr
-  JOIN stud.knyga AS k
-    ON e.isbn=k.isbn
-  WHERE k.isbn
-    IN (SELECT isbn FROM stud.autorius WHERE vardas='Jonas' AND pavarde='Petraitis');
 
 -- to_date, to_char, to_number
 SELECT isbn, gavimo_data

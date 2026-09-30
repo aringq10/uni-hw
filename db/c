@@ -1,0 +1,3 @@
+#!/usr/bin/bash
+
+psql -h pgsql2.mif -d biblio "$@"
