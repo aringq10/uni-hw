@@ -1,0 +1,129 @@
+#1
+
+string -> compare to string at [0x402400] "Border relations with Canada have never been better."
+
+#2
+
+string -> "%d %d %d %d %d %d" -> if less than 6 numbers read, explode -> a = 1 -> b = 2 ->
+c = 4 ... doubling all the way
+
+1 2 4 8 16 32
+
+#3
+
+string -> "%d %d" -> a <= 7 -> b has to be the value of [0x402470 + a * 8]
+
+possible answers:
+0 207
+1 311
+2 707
+3 256
+4 389
+5 206
+6 682
+7 327
+
+#4
+
+string -> "%d %d" -> a <= 14 -> func4(a, 0, 14) = 0 -> a = 7 -> b = 0 -> 7 0
+
+u = 14
+v = 0
+g = 7
+f = 7
+
+7 <= x && 7 >= x
+x = 7
+
+func4(x, y, z)
+    u = z - y
+    v = u >> 31
+    g = (u + v) a>> 1 # %rax
+    f = g + y         # %rcx
+    if (f <= x)
+        if (f >= x)
+            return 0
+        else
+            return 2 * func4(x, f + 1, z) + 1
+    else
+        return 2 * func4(x, y, f - 1)
+
+#5
+
+string -> length = 6 ->
+
+phase_5(char *l)
+    int i = 0
+    char c = *(l + i)
+    long a = c & 0xf
+    char answer[7];
+    answer[i] = [0x4024b0 + a] # take byte, put it at %rsp + i + 16
+    i += 1
+    if (i != 6)
+        repeat
+
+write 6 bytes, then a '\0', then compare them with "flyers" (102 108 121 101 114 115)
+[0x4024b0 +  9] = 102
+[0x4024b0 + 15] = 108
+[0x4024b0 + 14] = 121
+[0x4024b0 +  5] = 101
+[0x4024b0 +  6] = 114
+[0x4024b0 +  7] = 115
+string = (9 15 14 5 6 7)
+increase the values so the chars are ascii-printable
+
+possible answers:
+)/.%&'
+9?>567
+IONEFG
+Y_^UVW
+
+#6
+
+See phase_6_reasoning.s for more details
+
+string -> "%d %d %d %d %d %d" -> all numbers(x) are different and 0 < x < 7 -> 4 3 2 1 6 5
+
+#bonus
+
+i'm guessing read_line increments num_input_strings after each successful read. was too lazy to analyze it.
+to get some string into 0x603870 I'm gonna have to read read_line.
+
+phase_defused()
+    values_read = sscanf(0x603870, "%d %d %s", _, _, &s)
+    if (values_read == 3 && s == "DrEvil")
+        print("Curses, you've found the secret phase!")
+        print("But finding it and solving it are quite different...")
+        secret_phase()
+    print("Congratulations! You've defused the bomb!")
+
+secret_phase()
+    long x = strtol(read_line(), NULL, 10)
+    if ((int)(x - 1) > 1000)
+        explode_bomb()
+    if (fun7(0x6030f0, (int) x) != 2)
+        explode_bomb()
+    print("Wow! You've defused the secret stage!")
+
+fun7(int *x, int y)
+    if (x == NULL)
+        return -1;
+    if (*x <= y)
+        if (*x == y)
+            return 0
+        return 2 * fun7(x[4], y) + 1
+    else
+        return 2 * fun7(x[2], y)
+
+[0x6030f0] = 0x0000000000000024
+             0x0000000000603110
+             0x0000000000603130
+[0x603130] = 0x0000000000000032
+             0x0000000000603170
+             0x00000000006031b0
+[0x6031b0] = 0x000000000000006b
+             0x0000000000603210
+             0x00000000006032b0
+
+fun7(0x6030f0, y) -> fun7(0x603130, y) -> fun7(0x6031b0, y)
+y has to be bigger than 24 and 32 and equal to 107
