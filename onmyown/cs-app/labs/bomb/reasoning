@@ -86,16 +86,20 @@ string -> "%d %d %d %d %d %d" -> all numbers(x) are different and 0 < x < 7 -> 4
 
 #bonus
 
-i'm guessing read_line increments num_input_strings after each successful read. was too lazy to analyze it.
-to get some string into 0x603870 I'm gonna have to read read_line.
+read_line()
+    read up to 78 chars into this address: 80 * num_input_string + 0x603780
+    increment num_input_string
 
 phase_defused()
-    values_read = sscanf(0x603870, "%d %d %s", _, _, &s)
-    if (values_read == 3 && s == "DrEvil")
-        print("Curses, you've found the secret phase!")
-        print("But finding it and solving it are quite different...")
-        secret_phase()
-    print("Congratulations! You've defused the bomb!")
+    if (num_input_string == 6)
+        values_read = sscanf(0x603870, "%d %d %s", _, _, &s)
+        if (values_read == 3 && s == "DrEvil")
+            print("Curses, you've found the secret phase!")
+            print("But finding it and solving it are quite different...")
+            secret_phase()
+        print("Congratulations! You've defused the bomb!")
+
+we have to read "%d %d DrEvil" into 0x603870, which is the 4th answer's spot
 
 secret_phase()
     long x = strtol(read_line(), NULL, 10)
@@ -118,12 +122,14 @@ fun7(int *x, int y)
 [0x6030f0] = 0x0000000000000024
              0x0000000000603110
              0x0000000000603130
-[0x603130] = 0x0000000000000032
-             0x0000000000603170
-             0x00000000006031b0
-[0x6031b0] = 0x000000000000006b
-             0x0000000000603210
-             0x00000000006032b0
+[0x603110] = 0x0000000000000008
+             0x0000000000603190
+             0x0000000000603150
+[0x603150] = 0x0000000000000016
+             0x0000000000603270
+             0x0000000000603230
 
-fun7(0x6030f0, y) -> fun7(0x603130, y) -> fun7(0x6031b0, y)
-y has to be bigger than 24 and 32 and equal to 107
+only way to get 2 returned: 2 * (2 * 0 + 1)
+fun7(0x6030f0, y < 36) -> fun7(0x603110, y > 8) -> fun7(0x603150, y == 22)
+
+once prompted in the secret phase, we type in 22
